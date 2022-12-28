@@ -1,0 +1,6 @@
+[submodule "support/blue_heron"]
+	path = support/blue_heron
+	url = git@github.com:blue-heron/blue_heron.git
+[submodule "lib/serial"]
+	path = lib/serial
+	url = https://github.com/MasterQ32/zig-serial.git

@@ -1,0 +1,1 @@
+https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059
