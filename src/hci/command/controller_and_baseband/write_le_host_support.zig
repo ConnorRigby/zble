@@ -34,7 +34,7 @@ pub fn init() WriteLEHostSupport {
 }
 
 // fields: 
-// * le_supported_host_enabled
+le_supported_host_enabled: u8,
 
 // encode from a struct
 pub fn encode(self: WriteLEHostSupport, allocator: std.mem.Allocator) ![]u8 {
@@ -42,7 +42,7 @@ pub fn encode(self: WriteLEHostSupport, allocator: std.mem.Allocator) ![]u8 {
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = self.le_supported_host_enabled;
   // TODO: implement encoding WriteLEHostSupport
 
   return command;
@@ -52,7 +52,8 @@ pub fn encode(self: WriteLEHostSupport, allocator: std.mem.Allocator) ![]u8 {
 pub fn decode(payload: []u8) WriteLEHostSupport {
   std.debug.assert(payload[0] == OCF);
   std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
+  
+  return .{.length = payload.len, .le_supported_host_enabled = payload[2] };
 }
 
 test "WriteLEHostSupport decode" {
