@@ -21,14 +21,17 @@ pub const PacketType = enum(u8) {
 };
 
 pub const Packet = union(PacketType) {
-  command: Command,
+  command: union(Command.OPC) {
+    // TODO 
+  },
   acl:     ACL,
   sync:    Sync,
   event:   union(Event.Code) {
-    inquiry_complete: Event.InquiryComplete,
+    inquiry_complete:       Event.InquiryComplete,
     disconnection_complete: Event.DisconnectionComplete,
-    command_complete: Event.CommandComplete,
-    command_status: Event.CommandStatus,
+    command_complete:       Event.CommandComplete,
+    command_status:         Event.CommandStatus,
+    le_meta:                Event.LEMeta,
     pub fn format(value: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
       switch(value) {
         .command_complete => return writer.print("command_complete: {any}", .{value.command_complete}),

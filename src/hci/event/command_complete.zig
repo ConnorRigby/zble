@@ -83,40 +83,47 @@ pub const ErrorCode = enum(u8) {
   packet_too_long = 0x45,
 };
 
+pub const ErrorCodeReturnParameters = struct {
+  error_code: ErrorCode
+};
+
 pub const ReturnParameters = union(HCI.Command.OPC) {
   set_event_mask: struct {},
   read_local_version: struct {
-    error_code: ErrorCode,
-    hci_version: u8,
-    hci_revision: u16,
-    lmp_pal_version: u8,
-    manufacturer_name: u16,
+    error_code:         ErrorCode,
+    hci_version:        u8,
+    hci_revision:       u16,
+    lmp_pal_version:    u8,
+    manufacturer_name:  u16,
     lmp_pal_subversion: u16
   },
-  read_buffer_size_v1: struct {},
-  reset: struct {},
-  set_random_address: struct {},
-  set_advertising_parameters: struct {},
-  set_advertising_data: struct {},
-  set_advertising_enable: struct {},
-  set_scan_parameters: struct {},
-  set_scan_enable: struct {},
-  create_connection: struct {},
-  create_connection_cancel: struct {},
-  read_white_list_size: struct {},
-  write_default_link_policy_settings: struct {},
-  write_local_name: struct {},
-  read_local_name: struct {error_code: ErrorCode},
-  write_page_timeout: struct {},
-  write_scan_enable: struct {},
-  write_class_of_device: struct {},
-  write_synchronous_flow_control_enable: struct {},
-  write_inquiry_mode: struct {},
-  write_extended_inquiry_response: struct {},
-  write_simple_pairing_mode: struct {},
-  write_default_erroneous_data_reporting: struct {},
-  write_le_host_support: struct {},
-  write_secure_connections_host_support: struct {},
+  read_buffer_size_v1: struct {
+    error_code:                 ErrorCode,
+    acl_data_packet_length:     u16,
+    total_num_acl_data_packets: u8
+  },
+  reset:                                  ErrorCodeReturnParameters,
+  set_random_address:                     ErrorCodeReturnParameters,
+  set_advertising_parameters:             ErrorCodeReturnParameters,
+  set_advertising_data:                   ErrorCodeReturnParameters,
+  set_advertising_enable:                 ErrorCodeReturnParameters,
+  set_scan_parameters:                    ErrorCodeReturnParameters,
+  set_scan_enable:                        ErrorCodeReturnParameters,
+  create_connection:                      struct {}, // no return params
+  create_connection_cancel:               ErrorCodeReturnParameters,
+  write_default_link_policy_settings:     ErrorCodeReturnParameters,
+  write_local_name:                       ErrorCodeReturnParameters,
+  read_local_name:                        ErrorCodeReturnParameters,
+  write_page_timeout:                     ErrorCodeReturnParameters,
+  write_scan_enable:                      ErrorCodeReturnParameters,
+  write_class_of_device:                  ErrorCodeReturnParameters,
+  write_synchronous_flow_control_enable:  ErrorCodeReturnParameters,
+  write_inquiry_mode:                     ErrorCodeReturnParameters,
+  write_extended_inquiry_response:        ErrorCodeReturnParameters,
+  write_simple_pairing_mode:              ErrorCodeReturnParameters,
+  write_default_erroneous_data_reporting: ErrorCodeReturnParameters,
+  write_le_host_support:                  ErrorCodeReturnParameters,
+  write_secure_connections_host_support:  ErrorCodeReturnParameters,
 };
 
 num_hci_command_packets: u8,
