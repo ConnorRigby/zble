@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x56`
-/// * Opcode: `"V\f"`
+/// * Opcode: `0x560C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.59
 /// 
@@ -40,14 +40,17 @@ pub const OCF: u10 = 0x56;
 // Opcode
 pub const OPC: u16 = 0x560C;
 
+// fields: 
+enabled: bool,
+
 // payload length
 length: usize,
 pub fn init() WriteSimplePairingMode {
-  return .{.length = 3};
+  return .{
+    .length = 4,
+    .enabled = false
+  };
 }
-
-// fields: 
-// * enabled
 
 // encode from a struct
 pub fn encode(self: WriteSimplePairingMode, allocator: std.mem.Allocator) ![]u8 {
@@ -55,33 +58,19 @@ pub fn encode(self: WriteSimplePairingMode, allocator: std.mem.Allocator) ![]u8 
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 1;
+  command[3] = @boolToInt (self.enabled);
   // TODO: implement encoding WriteSimplePairingMode
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteSimplePairingMode {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteSimplePairingMode decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteSimplePairingMode.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteSimplePairingMode encode" {
-  const write_simple_pairing_mode = .{.length = 3};
+  const write_simple_pairing_mode = WriteSimplePairingMode.init();
   const encoded = try WriteSimplePairingMode.encode(write_simple_pairing_mode, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

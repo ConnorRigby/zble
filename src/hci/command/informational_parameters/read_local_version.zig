@@ -43,7 +43,7 @@ test "ReadLocalVersion decode" {
 }
 
 test "ReadLocalVersion encode" {
-  const read_local_version = .{.length = 3};
+  const read_local_version = ReadLocalVersion.init();
   const encoded = try ReadLocalVersion.encode(read_local_version, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

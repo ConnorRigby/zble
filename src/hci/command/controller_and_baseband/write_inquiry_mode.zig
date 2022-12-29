@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x45`
-/// * Opcode: `"E\f"`
+/// * Opcode: `0x450C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.50
 /// 
@@ -22,14 +22,17 @@ pub const OCF: u10 = 0x45;
 // Opcode
 pub const OPC: u16 = 0x450C;
 
+// fields: 
+inquiry_mode: u8,
+
 // payload length
 length: usize,
 pub fn init() WriteInquiryMode {
-  return .{.length = 3};
+  return .{
+    .length = 4,
+    .inquiry_mode = 0
+  };
 }
-
-// fields: 
-// * inquiry_mode
 
 // encode from a struct
 pub fn encode(self: WriteInquiryMode, allocator: std.mem.Allocator) ![]u8 {
@@ -37,33 +40,19 @@ pub fn encode(self: WriteInquiryMode, allocator: std.mem.Allocator) ![]u8 {
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 1;
+  command[3] = self.inquiry_mode;
   // TODO: implement encoding WriteInquiryMode
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteInquiryMode {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteInquiryMode decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteInquiryMode.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteInquiryMode encode" {
-  const write_inquiry_mode = .{.length = 3};
+  const write_inquiry_mode = WriteInquiryMode.init();
   const encoded = try WriteInquiryMode.encode(write_inquiry_mode, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

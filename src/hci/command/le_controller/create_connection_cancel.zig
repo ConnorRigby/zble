@@ -43,7 +43,7 @@ test "CreateConnectionCancel decode" {
 }
 
 test "CreateConnectionCancel encode" {
-  const create_connection_cancel = .{.length = 3};
+  const create_connection_cancel = CreateConnectionCancel.init();
   const encoded = try CreateConnectionCancel.encode(create_connection_cancel, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x5B`
-/// * Opcode: `"[\f"`
+/// * Opcode: `0x5B0C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.65
 /// 
@@ -28,14 +28,17 @@ pub const OCF: u10 = 0x5B;
 // Opcode
 pub const OPC: u16 = 0x5B0C;
 
+// fields: 
+enabled: bool,
+
 // payload length
 length: usize,
 pub fn init() WriteDefaultErroneousDataReporting {
-  return .{.length = 3};
+  return .{
+    .length = 4,
+    .enabled = false
+  };
 }
-
-// fields: 
-// * enabled
 
 // encode from a struct
 pub fn encode(self: WriteDefaultErroneousDataReporting, allocator: std.mem.Allocator) ![]u8 {
@@ -43,33 +46,19 @@ pub fn encode(self: WriteDefaultErroneousDataReporting, allocator: std.mem.Alloc
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 1;
+  command[3] = @boolToInt(self.enabled);
   // TODO: implement encoding WriteDefaultErroneousDataReporting
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteDefaultErroneousDataReporting {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteDefaultErroneousDataReporting decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteDefaultErroneousDataReporting.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteDefaultErroneousDataReporting encode" {
-  const write_default_erroneous_data_reporting = .{.length = 3};
+  const write_default_erroneous_data_reporting = WriteDefaultErroneousDataReporting.init();
   const encoded = try WriteDefaultErroneousDataReporting.encode(write_default_erroneous_data_reporting, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

@@ -43,7 +43,7 @@ test "ReadBufferSizeV1 decode" {
 }
 
 test "ReadBufferSizeV1 encode" {
-  const read_buffer_size_v1 = .{.length = 3};
+  const read_buffer_size_v1 = ReadBufferSizeV1.init();
   const encoded = try ReadBufferSizeV1.encode(read_buffer_size_v1, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

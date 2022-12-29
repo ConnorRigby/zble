@@ -20,16 +20,16 @@ pub const OCF: u10 = 0xF;
 // Opcode
 pub const OPC: u16 = 0xF08;
 
+// fields: 
+// * enable_hold_mode
+// * enable_role_switch
+// * enable_sniff_mode
+
 // payload length
 length: usize,
 pub fn init() WriteDefaultLinkPolicySettings {
   return .{.length = 3};
 }
-
-// fields: 
-// * enable_hold_mode
-// * enable_role_switch
-// * enable_sniff_mode
 
 // encode from a struct
 pub fn encode(self: WriteDefaultLinkPolicySettings, allocator: std.mem.Allocator) ![]u8 {
@@ -59,7 +59,7 @@ test "WriteDefaultLinkPolicySettings decode" {
 }
 
 test "WriteDefaultLinkPolicySettings encode" {
-  const write_default_link_policy_settings = .{.length = 3};
+  const write_default_link_policy_settings = WriteDefaultLinkPolicySettings.init();
   const encoded = try WriteDefaultLinkPolicySettings.encode(write_default_link_policy_settings, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

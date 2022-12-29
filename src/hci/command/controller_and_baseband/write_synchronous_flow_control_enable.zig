@@ -5,7 +5,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x2F`
-/// * Opcode: `"/\f"`
+/// * Opcode: `0x2F0C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.37
 /// 
@@ -31,14 +31,17 @@ pub const OCF: u10 = 0x2F;
 // Opcode
 pub const OPC: u16 = 0x2F0C;
 
+// fields: 
+enabled: bool,
+
 // payload length
 length: usize,
 pub fn init() WriteSynchronousFlowControlEnable {
-  return .{.length = 3};
+  return .{
+    .length = 4,
+    .enabled = false
+  };
 }
-
-// fields: 
-// * enabled
 
 // encode from a struct
 pub fn encode(self: WriteSynchronousFlowControlEnable, allocator: std.mem.Allocator) ![]u8 {
@@ -46,33 +49,19 @@ pub fn encode(self: WriteSynchronousFlowControlEnable, allocator: std.mem.Alloca
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 1;
+  command[3] = @boolToInt(self.enabled);
   // TODO: implement encoding WriteSynchronousFlowControlEnable
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteSynchronousFlowControlEnable {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteSynchronousFlowControlEnable decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteSynchronousFlowControlEnable.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteSynchronousFlowControlEnable encode" {
-  const write_synchronous_flow_control_enable = .{.length = 3};
+  const write_synchronous_flow_control_enable = WriteSynchronousFlowControlEnable.init();
   const encoded = try WriteSynchronousFlowControlEnable.encode(write_synchronous_flow_control_enable, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

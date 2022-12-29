@@ -9,15 +9,15 @@ pub const OCF: u10 = 0xC;
 // Opcode
 pub const OPC: u16 = 0xC20;
 
+// fields: 
+// * filter_duplicates
+// * le_scan_enable
+
 // payload length
 length: usize,
 pub fn init() SetScanEnable {
   return .{.length = 3};
 }
-
-// fields: 
-// * filter_duplicates
-// * le_scan_enable
 
 // encode from a struct
 pub fn encode(self: SetScanEnable, allocator: std.mem.Allocator) ![]u8 {
@@ -47,7 +47,7 @@ test "SetScanEnable decode" {
 }
 
 test "SetScanEnable encode" {
-  const set_scan_enable = .{.length = 3};
+  const set_scan_enable = SetScanEnable.init();
   const encoded = try SetScanEnable.encode(set_scan_enable, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

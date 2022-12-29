@@ -44,13 +44,13 @@ defmodule ZBLE.Codegen do
         pub const OCF: u10 = #{inspect(ocf, base: :hex)};
         // Opcode
         pub const OPC: u16 = #{inspect(opcode, base: :hex)};
-
+        #{if not Enum.empty?(fields), do: "\n// fields: #{for field <- fields, do: "\n// * #{field}"}\n"}
         // payload length
         length: usize,
         pub fn init() #{name} {
           return .{.length = 3};
         }
-        #{if not Enum.empty?(fields), do: "\n// fields: #{for field <- fields, do: "\n// * #{field}"}\n"}
+        
         // encode from a struct
         pub fn encode(self: #{name}, allocator: std.mem.Allocator) ![]u8 {
           var command = try allocator.alloc(u8, self.length);
@@ -63,27 +63,12 @@ defmodule ZBLE.Codegen do
           return command;
         }
 
-        // decode from a binary
-        pub fn decode(payload: []u8) #{name} {
-          std.debug.assert(payload[0] == OCF);
-          std.debug.assert(payload[1] == OGF >> 2);
-          return .{.length = payload.len};
-        }
-
-        test "#{name} decode" {
-          var payload = [_]u8 {OCF, OGF >> 2, 0};
-          const decoded = #{name}.decode(&payload);
-          _ = decoded;
-          try std.testing.expect(false);
-          @panic("test not implemented yet");
-        }
-
         test "#{name} encode" {
-          const #{Macro.underscore(name)} = .{.length = 3};
+          const #{Macro.underscore(name)} = #{name}.init();
           const encoded = try #{name}.encode(#{Macro.underscore(name)}, std.testing.allocator);
           defer std.testing.allocator.free(encoded);
           try std.testing.expect(encoded[0] == OCF);
-          try std.testing.expect(encoded[1] == OGF >> 2);
+          try std.testing.expect(encoded[1] == OGF << 2);
           try std.testing.expect(false);
           @panic("test not implemented yet");
         }
