@@ -22,29 +22,42 @@ const std = @import("std");
 pub const WriteDefaultErroneousDataReporting = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x5B;
 // Opcode
-pub const OPC: u16 = 0xC5B;
+pub const OPC: u16 = 0x5B0C;
+
+// payload length
+length: usize,
+pub fn init() WriteDefaultErroneousDataReporting {
+  return .{.length = 3};
+}
 
 // fields: 
 // * enabled
 
 // encode from a struct
-pub fn encode(self: WriteDefaultErroneousDataReporting) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: WriteDefaultErroneousDataReporting, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding WriteDefaultErroneousDataReporting
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) WriteDefaultErroneousDataReporting {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "WriteDefaultErroneousDataReporting decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = WriteDefaultErroneousDataReporting.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -52,9 +65,11 @@ test "WriteDefaultErroneousDataReporting decode" {
 }
 
 test "WriteDefaultErroneousDataReporting encode" {
-  const write_default_erroneous_data_reporting = .{};
-  const encoded = WriteDefaultErroneousDataReporting.encode(write_default_erroneous_data_reporting);
-  _ = encoded;
+  const write_default_erroneous_data_reporting = .{.length = 3};
+  const encoded = try WriteDefaultErroneousDataReporting.encode(write_default_erroneous_data_reporting, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

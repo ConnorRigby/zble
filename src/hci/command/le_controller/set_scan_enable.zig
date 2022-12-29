@@ -3,30 +3,43 @@ const std = @import("std");
 pub const SetScanEnable = @This();
 
 // Group Code
-pub const OGF: u8  = 0x20;
+pub const OGF: u6  = 0x8;
 // Command Code
 pub const OCF: u10 = 0xC;
 // Opcode
-pub const OPC: u16 = 0x200C;
+pub const OPC: u16 = 0xC20;
+
+// payload length
+length: usize,
+pub fn init() SetScanEnable {
+  return .{.length = 3};
+}
 
 // fields: 
 // * filter_duplicates
 // * le_scan_enable
 
 // encode from a struct
-pub fn encode(self: SetScanEnable) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: SetScanEnable, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding SetScanEnable
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) SetScanEnable {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "SetScanEnable decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = SetScanEnable.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -34,9 +47,11 @@ test "SetScanEnable decode" {
 }
 
 test "SetScanEnable encode" {
-  const set_scan_enable = .{};
-  const encoded = SetScanEnable.encode(set_scan_enable);
-  _ = encoded;
+  const set_scan_enable = .{.length = 3};
+  const encoded = try SetScanEnable.encode(set_scan_enable, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

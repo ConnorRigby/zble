@@ -3,11 +3,17 @@ const std = @import("std");
 pub const SetScanParameters = @This();
 
 // Group Code
-pub const OGF: u8  = 0x20;
+pub const OGF: u6  = 0x8;
 // Command Code
 pub const OCF: u10 = 0xB;
 // Opcode
-pub const OPC: u16 = 0x200B;
+pub const OPC: u16 = 0xB20;
+
+// payload length
+length: usize,
+pub fn init() SetScanParameters {
+  return .{.length = 3};
+}
 
 // fields: 
 // * le_scan_interval
@@ -17,19 +23,26 @@ pub const OPC: u16 = 0x200B;
 // * scanning_filter_policy
 
 // encode from a struct
-pub fn encode(self: SetScanParameters) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: SetScanParameters, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding SetScanParameters
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) SetScanParameters {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "SetScanParameters decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = SetScanParameters.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -37,9 +50,11 @@ test "SetScanParameters decode" {
 }
 
 test "SetScanParameters encode" {
-  const set_scan_parameters = .{};
-  const encoded = SetScanParameters.encode(set_scan_parameters);
-  _ = encoded;
+  const set_scan_parameters = .{.length = 3};
+  const encoded = try SetScanParameters.encode(set_scan_parameters, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

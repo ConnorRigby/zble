@@ -21,29 +21,42 @@ const std = @import("std");
 pub const WriteLEHostSupport = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x6D;
 // Opcode
-pub const OPC: u16 = 0xC6D;
+pub const OPC: u16 = 0x6D0C;
+
+// payload length
+length: usize,
+pub fn init() WriteLEHostSupport {
+  return .{.length = 3};
+}
 
 // fields: 
 // * le_supported_host_enabled
 
 // encode from a struct
-pub fn encode(self: WriteLEHostSupport) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: WriteLEHostSupport, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding WriteLEHostSupport
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) WriteLEHostSupport {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "WriteLEHostSupport decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = WriteLEHostSupport.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -51,9 +64,11 @@ test "WriteLEHostSupport decode" {
 }
 
 test "WriteLEHostSupport encode" {
-  const write_le_host_support = .{};
-  const encoded = WriteLEHostSupport.encode(write_le_host_support);
-  _ = encoded;
+  const write_le_host_support = .{.length = 3};
+  const encoded = try WriteLEHostSupport.encode(write_le_host_support, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

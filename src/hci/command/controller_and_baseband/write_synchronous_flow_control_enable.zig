@@ -25,29 +25,42 @@ const std = @import("std");
 pub const WriteSynchronousFlowControlEnable = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x2F;
 // Opcode
-pub const OPC: u16 = 0xC2F;
+pub const OPC: u16 = 0x2F0C;
+
+// payload length
+length: usize,
+pub fn init() WriteSynchronousFlowControlEnable {
+  return .{.length = 3};
+}
 
 // fields: 
 // * enabled
 
 // encode from a struct
-pub fn encode(self: WriteSynchronousFlowControlEnable) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: WriteSynchronousFlowControlEnable, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding WriteSynchronousFlowControlEnable
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) WriteSynchronousFlowControlEnable {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "WriteSynchronousFlowControlEnable decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = WriteSynchronousFlowControlEnable.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -55,9 +68,11 @@ test "WriteSynchronousFlowControlEnable decode" {
 }
 
 test "WriteSynchronousFlowControlEnable encode" {
-  const write_synchronous_flow_control_enable = .{};
-  const encoded = WriteSynchronousFlowControlEnable.encode(write_synchronous_flow_control_enable);
-  _ = encoded;
+  const write_synchronous_flow_control_enable = .{.length = 3};
+  const encoded = try WriteSynchronousFlowControlEnable.encode(write_synchronous_flow_control_enable, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

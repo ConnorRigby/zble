@@ -22,29 +22,42 @@ const std = @import("std");
 pub const WritePageTimeout = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x18;
 // Opcode
-pub const OPC: u16 = 0xC18;
+pub const OPC: u16 = 0x180C;
+
+// payload length
+length: usize,
+pub fn init() WritePageTimeout {
+  return .{.length = 3};
+}
 
 // fields: 
 // * timeout
 
 // encode from a struct
-pub fn encode(self: WritePageTimeout) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: WritePageTimeout, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding WritePageTimeout
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) WritePageTimeout {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "WritePageTimeout decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = WritePageTimeout.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -52,9 +65,11 @@ test "WritePageTimeout decode" {
 }
 
 test "WritePageTimeout encode" {
-  const write_page_timeout = .{};
-  const encoded = WritePageTimeout.encode(write_page_timeout);
-  _ = encoded;
+  const write_page_timeout = .{.length = 3};
+  const encoded = try WritePageTimeout.encode(write_page_timeout, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

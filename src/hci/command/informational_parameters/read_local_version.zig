@@ -3,26 +3,39 @@ const std = @import("std");
 pub const ReadLocalVersion = @This();
 
 // Group Code
-pub const OGF: u8  = 0x10;
+pub const OGF: u6  = 0x4;
 // Command Code
 pub const OCF: u10 = 0x1;
 // Opcode
-pub const OPC: u16 = 0x1001;
+pub const OPC: u16 = 0x110;
+
+// payload length
+length: usize,
+pub fn init() ReadLocalVersion {
+  return .{.length = 3};
+}
 
 // encode from a struct
-pub fn encode(self: ReadLocalVersion) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: ReadLocalVersion, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding ReadLocalVersion
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) ReadLocalVersion {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "ReadLocalVersion decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = ReadLocalVersion.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -30,9 +43,11 @@ test "ReadLocalVersion decode" {
 }
 
 test "ReadLocalVersion encode" {
-  const read_local_version = .{};
-  const encoded = ReadLocalVersion.encode(read_local_version);
-  _ = encoded;
+  const read_local_version = .{.length = 3};
+  const encoded = try ReadLocalVersion.encode(read_local_version, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

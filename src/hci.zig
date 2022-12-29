@@ -9,10 +9,10 @@ pub const Event   = @import("hci/event.zig");
 
 pub const PacketType = enum(u8) {
   Command = 0x01,
-  // ACL     = 0x02,
-  // Sync    = 0x03,
+  ACL     = 0x02,
+  Sync    = 0x03,
   Event   = 0x04,
-  // ISO     = 0x05
+  ISO     = 0x05
 };
 
 pub const Packet = union(PacketType) {

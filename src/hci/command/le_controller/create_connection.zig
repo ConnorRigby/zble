@@ -73,11 +73,17 @@ const std = @import("std");
 pub const CreateConnection = @This();
 
 // Group Code
-pub const OGF: u8  = 0x20;
+pub const OGF: u6  = 0x8;
 // Command Code
 pub const OCF: u10 = 0xD;
 // Opcode
-pub const OPC: u16 = 0x200D;
+pub const OPC: u16 = 0xD20;
+
+// payload length
+length: usize,
+pub fn init() CreateConnection {
+  return .{.length = 3};
+}
 
 // fields: 
 // * connection_interval_max
@@ -94,19 +100,26 @@ pub const OPC: u16 = 0x200D;
 // * supervision_timeout
 
 // encode from a struct
-pub fn encode(self: CreateConnection) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: CreateConnection, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding CreateConnection
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) CreateConnection {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "CreateConnection decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = CreateConnection.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -114,9 +127,11 @@ test "CreateConnection decode" {
 }
 
 test "CreateConnection encode" {
-  const create_connection = .{};
-  const encoded = CreateConnection.encode(create_connection);
-  _ = encoded;
+  const create_connection = .{.length = 3};
+  const encoded = try CreateConnection.encode(create_connection, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

@@ -24,26 +24,39 @@ const std = @import("std");
 pub const Reset = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x3;
 // Opcode
-pub const OPC: u16 = 0xC03;
+pub const OPC: u16 = 0x30C;
+
+// payload length
+length: usize,
+pub fn init() Reset {
+  return .{.length = 3};
+}
 
 // encode from a struct
-pub fn encode(self: Reset) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: Reset, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding Reset
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) Reset {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "Reset decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = Reset.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -51,9 +64,11 @@ test "Reset decode" {
 }
 
 test "Reset encode" {
-  const reset = .{};
-  const encoded = Reset.encode(reset);
-  _ = encoded;
+  const reset = .{.length = 3};
+  const encoded = try Reset.encode(reset, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

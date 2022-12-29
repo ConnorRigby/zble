@@ -15,8 +15,10 @@ defmodule ZBLE.Codegen do
         file = List.last(path) <> ".zig"
         name = List.last(rest)
         ocf = command.__ocf__()
-        <<^ocf::little-10, ogf::little-6>> = command.__opcode__()
-        <<opcode::little-16>> = command.__opcode__()
+        [ogf_name] = List.delete_at(rest, -1)
+        ogf_module = Module.concat(["BlueHeron", "HCI", "Command", ogf_name])
+        ogf = ogf_module.__ogf__()
+        <<opcode::16>> = command.__opcode__()
         path = Path.join([@root_dir, "src", "hci", "command" | List.replace_at(path, -1, file)])
         File.mkdir_p(Path.dirname(path))
 
@@ -37,26 +39,39 @@ defmodule ZBLE.Codegen do
         #{docs}pub const #{name} = @This();
 
         // Group Code
-        pub const OGF: u8  = #{inspect(ogf, base: :hex)};
+        pub const OGF: u6  = #{inspect(ogf, base: :hex)};
         // Command Code
         pub const OCF: u10 = #{inspect(ocf, base: :hex)};
         // Opcode
         pub const OPC: u16 = #{inspect(opcode, base: :hex)};
+
+        // payload length
+        length: usize,
+        pub fn init() #{name} {
+          return .{.length = 3};
+        }
         #{if not Enum.empty?(fields), do: "\n// fields: #{for field <- fields, do: "\n// * #{field}"}\n"}
         // encode from a struct
-        pub fn encode(self: #{name}) []u8 {
-          _ = self;
-          return &[_]u8{};
+        pub fn encode(self: #{name}, allocator: std.mem.Allocator) ![]u8 {
+          var command = try allocator.alloc(u8, self.length);
+          errdefer allocator.free(command);
+          command[0] = OCF;
+          command[1] = OGF << 2;
+          command[2] = 0;
+          // TODO: implement encoding #{name}
+
+          return command;
         }
 
         // decode from a binary
         pub fn decode(payload: []u8) #{name} {
-          _ = payload;
-          return .{};
+          std.debug.assert(payload[0] == OCF);
+          std.debug.assert(payload[1] == OGF >> 2);
+          return .{.length = payload.len};
         }
 
         test "#{name} decode" {
-          const payload = [_]u8 {};
+          var payload = [_]u8 {OCF, OGF >> 2, 0};
           const decoded = #{name}.decode(&payload);
           _ = decoded;
           try std.testing.expect(false);
@@ -64,9 +79,11 @@ defmodule ZBLE.Codegen do
         }
 
         test "#{name} encode" {
-          const #{Macro.underscore(name)} = .{};
-          const encoded = #{name}.encode(#{Macro.underscore(name)});
-          _ = encoded;
+          const #{Macro.underscore(name)} = .{.length = 3};
+          const encoded = try #{name}.encode(#{Macro.underscore(name)}, std.testing.allocator);
+          defer std.testing.allocator.free(encoded);
+          try std.testing.expect(encoded[0] == OCF);
+          try std.testing.expect(encoded[1] == OGF >> 2);
           try std.testing.expect(false);
           @panic("test not implemented yet");
         }

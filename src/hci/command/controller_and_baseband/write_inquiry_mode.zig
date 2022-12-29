@@ -16,29 +16,42 @@ const std = @import("std");
 pub const WriteInquiryMode = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x45;
 // Opcode
-pub const OPC: u16 = 0xC45;
+pub const OPC: u16 = 0x450C;
+
+// payload length
+length: usize,
+pub fn init() WriteInquiryMode {
+  return .{.length = 3};
+}
 
 // fields: 
 // * inquiry_mode
 
 // encode from a struct
-pub fn encode(self: WriteInquiryMode) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: WriteInquiryMode, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding WriteInquiryMode
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) WriteInquiryMode {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "WriteInquiryMode decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = WriteInquiryMode.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -46,9 +59,11 @@ test "WriteInquiryMode decode" {
 }
 
 test "WriteInquiryMode encode" {
-  const write_inquiry_mode = .{};
-  const encoded = WriteInquiryMode.encode(write_inquiry_mode);
-  _ = encoded;
+  const write_inquiry_mode = .{.length = 3};
+  const encoded = try WriteInquiryMode.encode(write_inquiry_mode, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

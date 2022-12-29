@@ -16,29 +16,42 @@ const std = @import("std");
 pub const WriteClassOfDevice = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x24;
 // Opcode
-pub const OPC: u16 = 0xC24;
+pub const OPC: u16 = 0x240C;
+
+// payload length
+length: usize,
+pub fn init() WriteClassOfDevice {
+  return .{.length = 3};
+}
 
 // fields: 
 // * class
 
 // encode from a struct
-pub fn encode(self: WriteClassOfDevice) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: WriteClassOfDevice, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding WriteClassOfDevice
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) WriteClassOfDevice {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "WriteClassOfDevice decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = WriteClassOfDevice.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -46,9 +59,11 @@ test "WriteClassOfDevice decode" {
 }
 
 test "WriteClassOfDevice encode" {
-  const write_class_of_device = .{};
-  const encoded = WriteClassOfDevice.encode(write_class_of_device);
-  _ = encoded;
+  const write_class_of_device = .{.length = 3};
+  const encoded = try WriteClassOfDevice.encode(write_class_of_device, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

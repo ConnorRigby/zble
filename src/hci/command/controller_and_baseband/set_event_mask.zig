@@ -23,77 +23,90 @@ const std = @import("std");
 pub const SetEventMask = @This();
 
 // Group Code
-pub const OGF: u8  = 0xC;
+pub const OGF: u6  = 0x3;
 // Command Code
 pub const OCF: u10 = 0x1;
 // Opcode
-pub const OPC: u16 = 0xC01;
+pub const OPC: u16 = 0x10C;
+
+// payload length
+length: usize,
+pub fn init() SetEventMask {
+  return .{.length = 3};
+}
 
 // fields: 
-// * remote_oob_data_request
-// * encryption_change
-// * qos_setup_complete
-// * connection_packet_type_changed
-// * connection_complete
-// * enhanced_flush_complete
-// * data_buffer_overflow
-// * link_supervision_timeout_changed
-// * extended_inquiry_result
-// * user_passkey_notification
-// * authentication_complete
-// * disconnection_complete
-// * max_slots_change
-// * user_confirmation_request
-// * page_scan_repetition_mode_change
-// * inquiry_resultwith_rssi
-// * remote_name_request_complete
-// * read_remote_supported_features_complete
-// * hardware_error
-// * user_passkey_request
-// * simple_pairing_complete
-// * pin_code_request
-// * inquiry_result
-// * remote_host_supported_features_notification
-// * keypress_notification
 // * synchronous_connection_changed
-// * synchronous_connection_complete
-// * flush_occurred
-// * loopback_command
-// * sniff_subrating
-// * link_key_request
-// * flow_specification_complete
-// * page_scan_mode_change
-// * link_key_notification
+// * disconnection_complete
 // * return_link_keys
-// * connection_request
-// * le_meta
-// * master_link_key_complete
-// * io_capability_response
-// * io_capability_request
-// * change_connection_link_key_complete
-// * read_clock_offset_complete
-// * read_remote_extended_features_complete
-// * role_change
-// * inquiry_complete
-// * qos_violation
+// * link_supervision_timeout_changed
+// * simple_pairing_complete
+// * keypress_notification
 // * encryption_key_refresh_complete
-// * mode_change
+// * hardware_error
+// * extended_inquiry_result
+// * page_scan_mode_change
+// * io_capability_request
+// * remote_oob_data_request
+// * flush_occurred
+// * read_remote_extended_features_complete
+// * link_key_notification
+// * data_buffer_overflow
+// * connection_complete
+// * authentication_complete
+// * synchronous_connection_complete
+// * sniff_subrating
+// * master_link_key_complete
+// * enhanced_flush_complete
+// * user_confirmation_request
+// * io_capability_response
+// * connection_packet_type_changed
+// * read_clock_offset_complete
+// * remote_name_request_complete
+// * qos_setup_complete
+// * qos_violation
+// * read_remote_supported_features_complete
+// * le_meta
+// * loopback_command
+// * link_key_request
+// * remote_host_supported_features_notification
 // * read_remote_version_information_complete
+// * change_connection_link_key_complete
+// * user_passkey_request
+// * inquiry_result
+// * inquiry_resultwith_rssi
+// * flow_specification_complete
+// * inquiry_complete
+// * user_passkey_notification
+// * role_change
+// * max_slots_change
+// * encryption_change
+// * pin_code_request
+// * page_scan_repetition_mode_change
+// * mode_change
+// * connection_request
 
 // encode from a struct
-pub fn encode(self: SetEventMask) []u8 {
-  _ = self;
-  return &[_]u8{};
+pub fn encode(self: SetEventMask, allocator: std.mem.Allocator) ![]u8 {
+  var command = try allocator.alloc(u8, self.length);
+  errdefer allocator.free(command);
+  command[0] = OCF;
+  command[1] = OGF << 2;
+  command[2] = 0;
+  // TODO: implement encoding SetEventMask
+
+  return command;
 }
 
 // decode from a binary
 pub fn decode(payload: []u8) SetEventMask {
-  _ = payload;
-  return .{};
+  std.debug.assert(payload[0] == OCF);
+  std.debug.assert(payload[1] == OGF >> 2);
+  return .{.length = payload.len};
 }
 
 test "SetEventMask decode" {
-  const payload = [_]u8 {};
+  var payload = [_]u8 {OCF, OGF >> 2, 0};
   const decoded = SetEventMask.decode(&payload);
   _ = decoded;
   try std.testing.expect(false);
@@ -101,9 +114,11 @@ test "SetEventMask decode" {
 }
 
 test "SetEventMask encode" {
-  const set_event_mask = .{};
-  const encoded = SetEventMask.encode(set_event_mask);
-  _ = encoded;
+  const set_event_mask = .{.length = 3};
+  const encoded = try SetEventMask.encode(set_event_mask, std.testing.allocator);
+  defer std.testing.allocator.free(encoded);
+  try std.testing.expect(encoded[0] == OCF);
+  try std.testing.expect(encoded[1] == OGF >> 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }
