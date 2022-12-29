@@ -169,21 +169,71 @@ defmodule ZBLE.Codegen do
   end
 
   def gen_events() do
-    for event <- @events do
+    events = for event <- @events do
       ["BlueHeron", "HCI", "Event" | rest] = Module.split(event)
       path = Enum.map(rest, fn name -> Macro.underscore(name) end)
       file = List.last(path) <> ".zig"
+      name = List.last(rest)
+      event_code = event.__code__()
 
       path = Path.join([@root_dir, "src", "hci", "event" | List.replace_at(path, -1, file)])
-      File.mkdir_p(Path.dirname(path))
 
+      File.mkdir_p(Path.dirname(path))
       File.touch!(path)
+      data = struct(event)
+      fields = Map.keys(data) -- [:__struct__]
+      docs = case Code.fetch_docs(event) do
+        {:docs_v1, 4, :elixir, "text/markdown", %{"en" => docs}, _, _} ->
+          doc = String.split(docs, "\n")
+          |> List.delete_at(-1)
+          |> Enum.join("\n/// ")
+          "/// " <> doc <> "\n"
+        _ -> ""
+      end
+      sub = if function_exported?(event, :__subevent_code__, 0), do: event.__subevent_code__()
+      %{file: file, path: path, name: name, event_code: event_code, docs: docs, fields: fields, sub_event_code: sub}
       # Enum.map(path, fn n -> Path.join(@root_dir, n) end)
       # |> IO.inspect(label: "event")
     end
+
+    for %{file: _file, path: path, name: name, event_code: event_code, docs: docs} <- events do
+      File.write!(path, """
+      const std = @import("std");
+
+      #{docs}pub const #{name} = @This();
+
+      pub const Code = #{inspect(event_code, base: :hex)};
+
+      test "#{name} decode " {
+        //TODO: implement test
+        std.testing.expect(false);
+      }
+      """)
+    end
+    event_path = Path.join([@root_dir, "src", "hci", "event.zig"])
+    events = Enum.sort(events, fn a, b -> a.event_code <= b.event_code end)
+    File.write!(event_path, """
+    const std = @import("std");
+    #{Enum.map(events, fn %{name: name, path: path} ->
+      imported = Path.split(path) -- Path.split(event_path)
+      "pub const #{name} = @import(\"#{Path.join(imported)}\");\n"
+    end)}
+
+    pub const Code = enum(u8) {
+    #{Enum.map(events, fn %{name: name, event_code: event_code, sub_event_code: sub} ->
+      unless sub, do:
+      "  #{Macro.underscore(name)} = #{inspect(event_code, base: :hex)},\n", else: ""
+    end)}
+    };
+
+
+    test {
+      std.testing.refAllDecls(@This());
+    }
+    """)
   end
 end
 
-ZBLE.Codegen.gen_commands()
+# ZBLE.Codegen.gen_commands()
 ZBLE.Codegen.gen_events()
 IO.puts "done"

@@ -1,5 +1,5 @@
 Mix.install([{:blue_heron, path: "support/blue_heron", override: true}, :blue_heron_transport_uart])
-
+Logger.add_backend(BlueHeron.HCIDump.Logger)
 defmodule BlueHeronScan do
   @moduledoc """
   A scanner to collect Manufacturer Specific Data from AdvertisingReport packets.
@@ -93,29 +93,80 @@ defmodule BlueHeronScan do
 
   use GenServer
   require Logger
+  alias BlueHeron.HCI.Command.{
+    ControllerAndBaseband.WriteLocalName,
+    LEController.SetScanEnable
+  }
 
   alias BlueHeron.HCI.Command.{
     ControllerAndBaseband.WriteLocalName,
     LEController.SetScanEnable
   }
 
+  alias BlueHeron.HCI.Command.{
+    ControllerAndBaseband,
+    InformationalParameters,
+    LEController
+  }
   alias BlueHeron.HCI.Event.{
     LEMeta.AdvertisingReport,
     LEMeta.AdvertisingReport.Device
   }
 
-  @init_commands [%WriteLocalName{name: "BlueHeronScan"}]
+  @default_name "BlueHeron"
+
+  @default_max_error_count 2
+  # @default_init_commands [
+  #   # %ControllerAndBaseband.Reset{},
+  #   %InformationalParameters.ReadLocalVersion{},
+  #   %ControllerAndBaseband.ReadLocalName{},
+  #   # %InformationalParameters.ReadLocalSupportedCommands{},
+  #   # %InformationalParameters.ReadBdAddr{},
+  #   # %InformationalParameters.ReadBufferSize{},
+  #   # %InformationalParameters.ReadLocalSupportedFeatures{},
+  #   %ControllerAndBaseband.SetEventMask{enhanced_flush_complete: false},
+  #   %ControllerAndBaseband.WriteSimplePairingMode{enabled: true},
+  #   %ControllerAndBaseband.WritePageTimeout{timeout: 0x60},
+  #   # %LinkPolicy.WriteDefaultLinkPolicySettings{settings: 0x00},
+  #   %ControllerAndBaseband.WriteClassOfDevice{class: 0x0C027A},
+  #   %ControllerAndBaseband.WriteLocalName{name: @default_name},
+  #   # %ControllerAndBaseband.WriteExtendedInquiryResponse(
+  #   #   false,
+  #   #   <<0x1A, 0x9, 0x42, 0x54, 0x73, 0x74, 0x61, 0x63, 0x6B, 0x20, 0x45, 0x20, 0x38, 0x3A, 0x34,
+  #   #     0x45, 0x3A, 0x30, 0x36, 0x3A, 0x38, 0x31, 0x3A, 0x41, 0x34, 0x3A, 0x35, 0x30, 0x20>>
+  #   # ),
+  #   %ControllerAndBaseband.WriteInquiryMode{inquiry_mode: 0x0},
+  #   %ControllerAndBaseband.WriteSecureConnectionsHostSupport{enabled: false},
+  #   %ControllerAndBaseband.WriteScanEnable{scan_enable: 0x01},
+  #   %ControllerAndBaseband.WriteSynchronousFlowControlEnable{enabled: true},
+  #   %ControllerAndBaseband.WriteDefaultErroneousDataReporting{enabled: true},
+  #   %LEController.ReadBufferSizeV1{},
+  #   %ControllerAndBaseband.WriteLEHostSupport{le_supported_host_enabled: true},
+  #   %LEController.ReadWhiteListSize{},
+  #   %LEController.SetScanParameters{
+  #     le_scan_type: 0x01,
+  #     le_scan_interval: 0x0030,
+  #     le_scan_window: 0x0030
+  #   },
+  #   %LEController.SetScanEnable{le_scan_enable: false}
+  # ]
+
+  @default_init_commands [
+    # %ControllerAndBaseband.Reset{},
+    %InformationalParameters.ReadLocalVersion{},
+    # %ControllerAndBaseband.ReadLocalName{},
+  ]
 
   @default_uart_config %{
     device: "ttyACM0",
     uart_opts: [speed: 115_200],
-    init_commands: @init_commands
+    init_commands: @default_init_commands
   }
 
   @default_usb_config %{
     vid: 0x0BDA,
     pid: 0xB82C,
-    init_commands: @init_commands
+    init_commands: @default_init_commands
   }
 
   @doc """
@@ -213,6 +264,7 @@ defmodule BlueHeronScan do
   # Sent when a transport connection is established.
   @impl GenServer
   def handle_info({:BLUETOOTH_EVENT_STATE, :HCI_STATE_WORKING}, state) do
+    Logger.info("HCI_STATE_WORKING")
     # Enable BLE Scanning. This will deliver messages to the process mailbox
     # when other devices broadcast.
     state = %{state | working: true}
@@ -231,8 +283,8 @@ defmodule BlueHeronScan do
 
   # Ignore other HCI Events.
   @impl GenServer
-  def handle_info({:HCI_EVENT_PACKET, _val}, state) do
-    # Logger.debug("#{__MODULE__} ignore HCI Event #{inspect(val)}")
+  def handle_info({:HCI_EVENT_PACKET, val}, state) do
+    Logger.debug("#{__MODULE__} ignore HCI Event #{inspect(val)}")
     {:noreply, state}
   end
 
@@ -380,5 +432,5 @@ defmodule BleAdMfgData do
     nil
   end
 end
-BlueHeronScan.start_link(:uart, %{device: "ttyUSB1"})
+BlueHeronScan.start_link(:uart, %{device: "ttyUSB0"})
 Process.sleep(:infinity)

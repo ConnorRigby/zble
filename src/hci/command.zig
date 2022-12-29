@@ -118,7 +118,3 @@ payload: Payload,
 test {
   std.testing.refAllDecls(Command);
 }
-
-test {
-  try std.testing.expect(false);
-}

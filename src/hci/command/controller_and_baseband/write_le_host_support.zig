@@ -29,12 +29,12 @@ pub const OPC: u16 = 0x6D0C;
 
 // payload length
 length: usize,
+// fields: 
+
+le_supported_host_enabled: u8,
 pub fn init() WriteLEHostSupport {
   return .{.length = 3};
 }
-
-// fields: 
-le_supported_host_enabled: u8,
 
 // encode from a struct
 pub fn encode(self: WriteLEHostSupport, allocator: std.mem.Allocator) ![]u8 {
