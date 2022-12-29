@@ -79,12 +79,6 @@ pub const OCF: u10 = 0xD;
 // Opcode
 pub const OPC: u16 = 0xD20;
 
-// payload length
-length: usize,
-pub fn init() CreateConnection {
-  return .{.length = 3};
-}
-
 // fields: 
 // * connection_interval_max
 // * connection_interval_min
@@ -98,6 +92,12 @@ pub fn init() CreateConnection {
 // * peer_address
 // * peer_address_type
 // * supervision_timeout
+
+// payload length
+length: usize,
+pub fn init() CreateConnection {
+  return .{.length = 3};
+}
 
 // encode from a struct
 pub fn encode(self: CreateConnection, allocator: std.mem.Allocator) ![]u8 {
@@ -127,7 +127,7 @@ test "CreateConnection decode" {
 }
 
 test "CreateConnection encode" {
-  const create_connection = .{.length = 3};
+  const create_connection = CreateConnection.init();
   const encoded = try CreateConnection.encode(create_connection, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

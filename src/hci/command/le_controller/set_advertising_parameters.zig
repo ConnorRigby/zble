@@ -9,12 +9,6 @@ pub const OCF: u10 = 0x6;
 // Opcode
 pub const OPC: u16 = 0x620;
 
-// payload length
-length: usize,
-pub fn init() SetAdvertisingParameters {
-  return .{.length = 3};
-}
-
 // fields: 
 // * advertising_channel_map
 // * advertising_filter_policy
@@ -24,6 +18,12 @@ pub fn init() SetAdvertisingParameters {
 // * own_address_type
 // * peer_address
 // * peer_address_type
+
+// payload length
+length: usize,
+pub fn init() SetAdvertisingParameters {
+  return .{.length = 3};
+}
 
 // encode from a struct
 pub fn encode(self: SetAdvertisingParameters, allocator: std.mem.Allocator) ![]u8 {
@@ -53,7 +53,7 @@ test "SetAdvertisingParameters decode" {
 }
 
 test "SetAdvertisingParameters encode" {
-  const set_advertising_parameters = .{.length = 3};
+  const set_advertising_parameters = SetAdvertisingParameters.init();
   const encoded = try SetAdvertisingParameters.encode(set_advertising_parameters, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

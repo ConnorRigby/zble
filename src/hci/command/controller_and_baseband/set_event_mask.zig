@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x1`
-/// * Opcode: `<<1, 12>>`
+/// * Opcode: `0x10C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.1
 /// 
@@ -29,62 +29,72 @@ pub const OCF: u10 = 0x1;
 // Opcode
 pub const OPC: u16 = 0x10C;
 
+// fields:
+const Events = packed union {
+  fields: packed struct {
+    padding: u15,
+    le_met: u1,
+    remote_host_supported_features_notification: u1,
+    keypress_notification: u1,
+    user_passkey_notification: u1,
+    enhanced_flush_complete: u1,
+    link_supervision_timeout_changed: u1,
+    simple_pairing_complete: u1,
+    remote_oob_data_request: u1,
+    user_passkey_request: u1,
+    user_confirmation_request: u1,
+    io_capability_response: u1,
+    io_capability_request: u1,
+    encryption_key_refresh_complete: u1,
+    extended_inquiry_result: u1,
+    sniff_subrating: u1,
+    synchronous_connection_changed: u1,
+    synchronous_connection_complete: u1,
+    read_remote_extended_features_complete: u1,
+    inquiry_resultwith_rssi: u1,
+    flow_specification_complete: u1,
+    page_scan_repetition_mode_change: u1,
+    page_scan_mode_change: u1,
+    qos_violation: u1,
+    connection_packet_type_changed: u1,
+    read_clock_offset_complete: u1,
+    max_slots_change: u1,
+    data_buffer_overflow: u1,
+    loopback_command: u1,
+    link_key_notification: u1,
+    link_key_request: u1,
+    pin_code_request: u1,
+    return_link_keys: u1,
+    mode_change: u1,
+    role_change: u1,
+    flush_occurred: u1,
+    hardware_error: u1,
+    qos_setup_complete: u1,
+    read_remote_version_information_complete: u1,
+    read_remote_supported_features_complete: u1,
+    master_link_key_complete: u1,
+    change_connection_link_key_complete: u1,
+    encryption_change: u1,
+    remote_name_request_complete: u1,
+    authentication_complete: u1,
+    disconnection_complete: u1,
+    connection_request: u1,
+    connection_complete: u1,
+    inquiry_result: u1,
+    inquiry_complete: u1,
+  },
+  data: u64,
+};
+
+events: Events,
 // payload length
 length: usize,
 pub fn init() SetEventMask {
-  return .{.length = 3};
+  return .{
+    .length = 11,
+    .events = .{.data = @as(u64, 0xffff_ffff_fff1_0000)}
+  };
 }
-
-// fields: 
-// * synchronous_connection_changed
-// * disconnection_complete
-// * return_link_keys
-// * link_supervision_timeout_changed
-// * simple_pairing_complete
-// * keypress_notification
-// * encryption_key_refresh_complete
-// * hardware_error
-// * extended_inquiry_result
-// * page_scan_mode_change
-// * io_capability_request
-// * remote_oob_data_request
-// * flush_occurred
-// * read_remote_extended_features_complete
-// * link_key_notification
-// * data_buffer_overflow
-// * connection_complete
-// * authentication_complete
-// * synchronous_connection_complete
-// * sniff_subrating
-// * master_link_key_complete
-// * enhanced_flush_complete
-// * user_confirmation_request
-// * io_capability_response
-// * connection_packet_type_changed
-// * read_clock_offset_complete
-// * remote_name_request_complete
-// * qos_setup_complete
-// * qos_violation
-// * read_remote_supported_features_complete
-// * le_meta
-// * loopback_command
-// * link_key_request
-// * remote_host_supported_features_notification
-// * read_remote_version_information_complete
-// * change_connection_link_key_complete
-// * user_passkey_request
-// * inquiry_result
-// * inquiry_resultwith_rssi
-// * flow_specification_complete
-// * inquiry_complete
-// * user_passkey_notification
-// * role_change
-// * max_slots_change
-// * encryption_change
-// * pin_code_request
-// * page_scan_repetition_mode_change
-// * mode_change
-// * connection_request
 
 // encode from a struct
 pub fn encode(self: SetEventMask, allocator: std.mem.Allocator) ![]u8 {
@@ -92,33 +102,18 @@ pub fn encode(self: SetEventMask, allocator: std.mem.Allocator) ![]u8 {
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 8;
+  std.mem.writeInt(u64, command[3..11], self.events.data, .Big);
+
   // TODO: implement encoding SetEventMask
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) SetEventMask {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "SetEventMask decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = SetEventMask.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "SetEventMask encode" {
-  const set_event_mask = .{.length = 3};
+  const set_event_mask = SetEventMask.init();
   const encoded = try SetEventMask.encode(set_event_mask, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
+  try std.testing.expect(encoded[1] == OGF << 2);
 }

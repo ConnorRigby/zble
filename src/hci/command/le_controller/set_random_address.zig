@@ -9,14 +9,14 @@ pub const OCF: u10 = 0x5;
 // Opcode
 pub const OPC: u16 = 0x520;
 
+// fields: 
+// * random_address
+
 // payload length
 length: usize,
 pub fn init() SetRandomAddress {
   return .{.length = 3};
 }
-
-// fields: 
-// * random_address
 
 // encode from a struct
 pub fn encode(self: SetRandomAddress, allocator: std.mem.Allocator) ![]u8 {
@@ -46,7 +46,7 @@ test "SetRandomAddress decode" {
 }
 
 test "SetRandomAddress encode" {
-  const set_random_address = .{.length = 3};
+  const set_random_address = SetRandomAddress.init();
   const encoded = try SetRandomAddress.encode(set_random_address, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

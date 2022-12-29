@@ -9,14 +9,14 @@ pub const OCF: u10 = 0xA;
 // Opcode
 pub const OPC: u16 = 0xA20;
 
+// fields: 
+// * advertising_enable
+
 // payload length
 length: usize,
 pub fn init() SetAdvertisingEnable {
   return .{.length = 3};
 }
-
-// fields: 
-// * advertising_enable
 
 // encode from a struct
 pub fn encode(self: SetAdvertisingEnable, allocator: std.mem.Allocator) ![]u8 {
@@ -46,7 +46,7 @@ test "SetAdvertisingEnable decode" {
 }
 
 test "SetAdvertisingEnable encode" {
-  const set_advertising_enable = .{.length = 3};
+  const set_advertising_enable = SetAdvertisingEnable.init();
   const encoded = try SetAdvertisingEnable.encode(set_advertising_enable, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

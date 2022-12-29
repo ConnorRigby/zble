@@ -5,7 +5,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x14`
-/// * Opcode: `<<20, 12>>`
+/// * Opcode: `0x140C`
 /// 
 /// ## Command Parameters
 /// > None
@@ -40,27 +40,12 @@ pub fn encode(self: ReadLocalName, allocator: std.mem.Allocator) ![]u8 {
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) ReadLocalName {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "ReadLocalName decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = ReadLocalName.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "ReadLocalName encode" {
-  const read_local_name = .{.length = 3};
+  const read_local_name = ReadLocalName.init();
   const encoded = try ReadLocalName.encode(read_local_name, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

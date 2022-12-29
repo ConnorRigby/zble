@@ -5,7 +5,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x52`
-/// * Opcode: `"R\f"`
+/// * Opcode: `0x520C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.56
 /// 
@@ -29,15 +29,19 @@ pub const OCF: u10 = 0x52;
 // Opcode
 pub const OPC: u16 = 0x520C;
 
+// fields: 
+fec_required: bool,
+extended_inquiry_response: [244]u8,
+
 // payload length
 length: usize,
 pub fn init() WriteExtendedInquiryResponse {
-  return .{.length = 3};
+  return .{
+    .length = 248,
+    .fec_required = false,
+    .extended_inquiry_response = std.mem.zeroes([244]u8)
+  };
 }
-
-// fields: 
-// * extended_inquiry_response
-// * fec_required?
 
 // encode from a struct
 pub fn encode(self: WriteExtendedInquiryResponse, allocator: std.mem.Allocator) ![]u8 {
@@ -45,33 +49,20 @@ pub fn encode(self: WriteExtendedInquiryResponse, allocator: std.mem.Allocator) 
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
-  // TODO: implement encoding WriteExtendedInquiryResponse
+  command[2] = 241;
+  command[3] = @boolToInt(self.fec_required);
+  std.mem.copy(u8, command[4..], &self.extended_inquiry_response);
+
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteExtendedInquiryResponse {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteExtendedInquiryResponse decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteExtendedInquiryResponse.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteExtendedInquiryResponse encode" {
-  const write_extended_inquiry_response = .{.length = 3};
+  const write_extended_inquiry_response = WriteExtendedInquiryResponse.init();
   const encoded = try WriteExtendedInquiryResponse.encode(write_extended_inquiry_response, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

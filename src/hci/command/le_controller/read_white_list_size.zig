@@ -43,7 +43,7 @@ test "ReadWhiteListSize decode" {
 }
 
 test "ReadWhiteListSize encode" {
-  const read_white_list_size = .{.length = 3};
+  const read_white_list_size = ReadWhiteListSize.init();
   const encoded = try ReadWhiteListSize.encode(read_white_list_size, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

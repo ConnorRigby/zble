@@ -9,18 +9,18 @@ pub const OCF: u10 = 0xB;
 // Opcode
 pub const OPC: u16 = 0xB20;
 
-// payload length
-length: usize,
-pub fn init() SetScanParameters {
-  return .{.length = 3};
-}
-
 // fields: 
 // * le_scan_interval
 // * le_scan_type
 // * le_scan_window
 // * own_address_type
 // * scanning_filter_policy
+
+// payload length
+length: usize,
+pub fn init() SetScanParameters {
+  return .{.length = 3};
+}
 
 // encode from a struct
 pub fn encode(self: SetScanParameters, allocator: std.mem.Allocator) ![]u8 {
@@ -50,7 +50,7 @@ test "SetScanParameters decode" {
 }
 
 test "SetScanParameters encode" {
-  const set_scan_parameters = .{.length = 3};
+  const set_scan_parameters = SetScanParameters.init();
   const encoded = try SetScanParameters.encode(set_scan_parameters, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);

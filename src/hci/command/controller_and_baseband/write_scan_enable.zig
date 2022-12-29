@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x1A`
-/// * Opcode: `<<26, 12>>`
+/// * Opcode: `0x1A0C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.18
 /// 
@@ -34,14 +34,17 @@ pub const OCF: u10 = 0x1A;
 // Opcode
 pub const OPC: u16 = 0x1A0C;
 
+// fields: 
+scan_enable: u8,
+
 // payload length
 length: usize,
 pub fn init() WriteScanEnable {
-  return .{.length = 3};
+  return .{
+    .length = 4,
+    .scan_enable = 0x00
+  };
 }
-
-// fields: 
-// * scan_enable
 
 // encode from a struct
 pub fn encode(self: WriteScanEnable, allocator: std.mem.Allocator) ![]u8 {
@@ -49,33 +52,19 @@ pub fn encode(self: WriteScanEnable, allocator: std.mem.Allocator) ![]u8 {
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 1;
+  command[3] = self.scan_enable;
   // TODO: implement encoding WriteScanEnable
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteScanEnable {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteScanEnable decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteScanEnable.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteScanEnable encode" {
-  const write_scan_enable = .{.length = 3};
+  const write_scan_enable = WriteScanEnable.init();
   const encoded = try WriteScanEnable.encode(write_scan_enable, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

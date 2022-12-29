@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x13`
-/// * Opcode: `<<19, 12>>`
+/// * Opcode: `0x130C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.11
 /// 
@@ -22,14 +22,17 @@ pub const OCF: u10 = 0x13;
 // Opcode
 pub const OPC: u16 = 0x130C;
 
+// fields: 
+name: [248]u8,
+
 // payload length
 length: usize,
 pub fn init() WriteLocalName {
-  return .{.length = 3};
+  return .{
+    .length = 251,
+    .name = [_]u8{'z', 'B', 'l', 'e'} ++ std.mem.zeroes([244]u8)
+  };
 }
-
-// fields: 
-// * name
 
 // encode from a struct
 pub fn encode(self: WriteLocalName, allocator: std.mem.Allocator) ![]u8 {
@@ -37,33 +40,20 @@ pub fn encode(self: WriteLocalName, allocator: std.mem.Allocator) ![]u8 {
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 248;
+  std.mem.copy(u8, command[3..], &self.name);
+
   // TODO: implement encoding WriteLocalName
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WriteLocalName {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WriteLocalName decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WriteLocalName.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WriteLocalName encode" {
-  const write_local_name = .{.length = 3};
+  const write_local_name = WriteLocalName.init();
   const encoded = try WriteLocalName.encode(write_local_name, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }

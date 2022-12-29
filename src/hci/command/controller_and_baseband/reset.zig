@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x3`
-/// * Opcode: `<<3, 12>>`
+/// * Opcode: `0x30C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.2
 /// 
@@ -48,27 +48,12 @@ pub fn encode(self: Reset, allocator: std.mem.Allocator) ![]u8 {
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) Reset {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "Reset decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = Reset.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "Reset encode" {
-  const reset = .{.length = 3};
+  const reset = Reset.init();
   const encoded = try Reset.encode(reset, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }
