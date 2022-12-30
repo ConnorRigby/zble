@@ -33,16 +33,40 @@ pub fn build(b: *std.build.Builder) void {
     run_step.dependOn(&run_cmd.step);
 
     const main_tests = b.addTest("src/main.zig");
+    const coverage = b.option(bool, "coverage", "Generate test coverage") orelse false;
     main_tests.addPackagePath("serial", "lib/serial/src/serial.zig");
     main_tests.setBuildMode(mode);
+    if (coverage) {
+        // with kcov
+        main_tests.setExecCmd(&[_]?[]const u8{
+            "kcov",
+            "--exclude-pattern=zig-*/",
+            "--exclude-pattern=lib/",
+            //"--path-strip-level=3", // any kcov flags can be specified here
+            "kcov-output", // output dir for kcov
+            null, // to get zig to use the --test-cmd-bin flag
+        });
+    }
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&main_tests.step);
 
     //Build step to generate docs:
     const docs = b.addTest("src/hci.zig");
+    if (coverage) {
+        // with kcov
+        docs.setExecCmd(&[_]?[]const u8{
+            "kcov",
+            "--exclude-pattern=zig-*/",
+            "--exclude-pattern=lib/",
+            //"--path-strip-level=3", // any kcov flags can be specified here
+            "docs/coverage", // output dir for kcov
+            null, // to get zig to use the --test-cmd-bin flag
+        });
+    }
     docs.setBuildMode(mode);
     docs.emit_docs = .emit;
+
     const docs_step = b.step("docs", "Generate docs");
     docs_step.dependOn(&docs.step);
 }

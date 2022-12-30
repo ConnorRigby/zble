@@ -1,4 +1,4 @@
-name: Run zBle tests
+name: Unit Tests
 
 on:
   push:
@@ -9,17 +9,20 @@ jobs:
     strategy:
       fail-fast: false
     runs-on: ubuntu-latest
+    container: 
+      image: kcov/kcov
+      options: --security-opt seccomp=unconfined
     timeout-minutes: 15
     steps:
+      - name: Install dependencies
+        run: |
+          apt update
+          apt install -y git build-essential curl
+
       - name: Checkout Repository
         uses: actions/checkout@v3
-
-      - name: initilize submodules
-        id: init
-        shell: bash
-        run: |
-          git submodule init lib/serial
-          git submodule update
+        with:
+          submodules: true
 
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2.0.1
@@ -27,4 +30,12 @@ jobs:
       - name: Run Tests
         id: test
         shell: bash
-        run: zig build test
+        run: zig build test -Dcoverage
+
+      - name: Upload coverage reports to Codecov
+        run: |
+          # Replace `linux` below with the appropriate OS
+          curl -Os https://uploader.codecov.io/latest/linux/codecov
+          chmod +x codecov
+          ./codecov -t ${CODECOV_TOKEN} -s kcov-output
+

@@ -1,2 +1,4 @@
 zig-*
 /docs
+/kcov-output
+.coveralls.yml
