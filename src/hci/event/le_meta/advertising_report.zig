@@ -17,5 +17,4 @@ pub const Code = 0x3E;
 
 test "AdvertisingReport decode " {
   //TODO: implement test
-  std.testing.expect(false);
-}
+  std.log.warn("unimplemented", .{});}

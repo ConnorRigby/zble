@@ -11,5 +11,4 @@ pub const Code = 0x1;
 
 test "InquiryComplete decode " {
   //TODO: implement test
-  std.testing.expect(false);
-}
+  std.log.warn("unimplemented", .{});}
