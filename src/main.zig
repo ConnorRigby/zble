@@ -25,8 +25,10 @@ pub fn main() !u8 {
     const allocator = std.heap.page_allocator;
     // var command = HCI.Command.Reset.init();
     // var command = HCI.Command.ReadLocalName.init();
-    var read_local_version = HCI.Command.ReadLocalVersion.init();
-    var packet: HCI.Packet = .{.command = .{.read_local_version = read_local_version}};
+
+    var scan_enable = HCI.Command.WriteScanEnable.init();
+    scan_enable.scan_enable = 0x1;
+    var packet: HCI.Packet = .{.command = .{.write_scan_enable = scan_enable}};
 
     const reader = serial.reader();
     const writer = serial.writer();
@@ -34,6 +36,24 @@ pub fn main() !u8 {
     
     try transport.write(packet);
 
+    packet = try transport.receive();
+    std.log.info("received packet: {any}", .{packet});
+
+    var write_local_name = HCI.Command.WriteLocalName.init();
+    packet = .{.command = .{.write_local_name = write_local_name}};
+    try transport.write(packet);
+    packet = try transport.receive();
+    std.log.info("received packet: {any}", .{packet});
+
+    var read_local_version = HCI.Command.ReadLocalVersion.init();
+    packet = .{.command = .{.read_local_version = read_local_version}};
+    try transport.write(packet);
+    packet = try transport.receive();
+    std.log.info("received packet: {any}", .{packet});
+
+    var set_event_mask = HCI.Command.SetEventMask.init();
+    packet = .{.command = .{.set_event_mask = set_event_mask}};
+    try transport.write(packet);
     packet = try transport.receive();
     std.log.info("received packet: {any}", .{packet});
 

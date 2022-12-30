@@ -38,4 +38,11 @@ pub fn build(b: *std.build.Builder) void {
 
     const test_step = b.step("test", "Run library tests");
     test_step.dependOn(&main_tests.step);
+
+    //Build step to generate docs:
+    const docs = b.addTest("src/hci.zig");
+    docs.setBuildMode(mode);
+    docs.emit_docs = .emit;
+    const docs_step = b.step("docs", "Generate docs");
+    docs_step.dependOn(&docs.step);
 }

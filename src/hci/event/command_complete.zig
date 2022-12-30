@@ -88,7 +88,7 @@ pub const ErrorCodeReturnParameters = struct {
 };
 
 pub const ReturnParameters = union(HCI.Command.OPC) {
-  set_event_mask: struct {},
+  set_event_mask: struct {error_code: ErrorCode},
   read_local_version: struct {
     error_code:         ErrorCode,
     hci_version:        u8,

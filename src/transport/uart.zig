@@ -169,9 +169,8 @@ fn receive_return_parameters(self: *Uart, command_opcode: Opcode, length: u8) !R
 }
 
 fn receive_return_parameters_set_event_mask(self: *Uart) !ReturnParameters {
-  _ = self;
-  // TODO: implement receive_return_parameters_set_event_mask
-  return Error.NotImplemented;
+  const error_code         = try self.reader.readEnum(ErrorCode, .Little);
+  return .{.set_event_mask = .{.error_code = error_code}};
 }
 
 fn receive_return_parameters_read_local_version(self: *Uart) !ReturnParameters {
