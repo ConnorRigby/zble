@@ -21,7 +21,6 @@ jobs:
           git submodule init lib/serial
           git submodule update
 
-        
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2.0.1
 
