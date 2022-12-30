@@ -1,0 +1,31 @@
+name: Run zBle tests
+
+on:
+  push:
+    #
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: initilize submodules
+        id: init
+        shell: bash
+        run: |
+          git submodule init lib/serial
+          git submodule update
+
+        
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2.0.1
+
+      - name: Run Tests
+        id: test
+        shell: bash
+        run: zig build test
