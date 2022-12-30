@@ -25,52 +25,17 @@ pub fn main() !u8 {
     const allocator = std.heap.page_allocator;
     // var command = HCI.Command.Reset.init();
     // var command = HCI.Command.ReadLocalName.init();
-    var command = HCI.Command.ReadLocalVersion.init();
+    var read_local_version = HCI.Command.ReadLocalVersion.init();
+    var packet: HCI.Packet = .{.command = .{.read_local_version = read_local_version}};
 
-    var encoded = try command.encode(allocator);
-    defer allocator.free(encoded);
-
-
-    var buffer = try allocator.alloc(u8, 257);
-    defer allocator.free(buffer);
-    std.mem.set(u8, buffer, 0);
-
-    buffer[0] = 0x01;
-    std.mem.copy(u8, buffer[1..], encoded);
-    var full_command_to_send = buffer[0..encoded.len + 1];
-    try serial.writer().writeAll(full_command_to_send);
-    std.log.info("wrote: {s}", .{std.fmt.fmtSliceEscapeLower(full_command_to_send)});
     const reader = serial.reader();
-    var packet = try HCI.Transport.Uart.receive_packet(reader);
-    std.log.info("received packet: {any}", .{packet});
+    const writer = serial.writer();
+    var transport = HCI.Transport.Uart.init(allocator, reader, writer);
+    
+    try transport.write(packet);
 
-    // while (true) {
-    //     var packet_type = try reader.readEnum(HCI.PacketType, .Little);
-    //     switch(packet_type) {
-    //         .Event => {
-    //             var event_type = try reader.readEnum(HCI.Event.Code, .Little);
-    //             switch(event_type) {
-    //                 .command_complete => {
-    //                     var num_hci_commands = try reader.readByte();
-    //                     var size = try reader.readByte();
-    //                     std.log.info("size={d} num_hci_commands={d}", .{size, num_hci_commands});
-    //                     // var opcode = try reader.readInt(u16, .Little);
-    //                     var opcode = try reader.readEnum(HCI.Command.OPC, .Big);
-    //                     std.log.info("opcode={any}", .{opcode});
-    //                     break;
-    //                 },
-    //                 else => |e| {
-    //                     std.log.err("unexpected event type: {any}", .{e});
-    //                     break;
-    //                 }
-    //             }
-    //         },
-    //         else => |p| {
-    //             std.log.err("unexpected packet type: {any}", .{p});
-    //             break;
-    //         }
-    //     }
-    // }
+    packet = try transport.receive();
+    std.log.info("received packet: {any}", .{packet});
 
     while(true) {
         var r = try reader.readByte();
