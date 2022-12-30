@@ -4,3 +4,6 @@
 [submodule "lib/serial"]
 	path = lib/serial
 	url = https://github.com/MasterQ32/zig-serial.git
+[submodule "support/btstack"]
+	path = support/btstack
+	url = https://github.com/bluekitchen/btstack.git
