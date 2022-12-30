@@ -4,7 +4,7 @@ const std = @import("std");
 /// 
 /// * OGF: `0x3`
 /// * OCF: `0x18`
-/// * Opcode: `<<24, 12>>`
+/// * Opcode: `0x180C`
 /// 
 /// Bluetooth Spec v5.2, Vol 4, Part E, section 7.3.16
 /// 
@@ -28,14 +28,17 @@ pub const OCF: u10 = 0x18;
 // Opcode
 pub const OPC: u16 = 0x180C;
 
+// fields: 
+timeout: u16,
+
 // payload length
 length: usize,
 pub fn init() WritePageTimeout {
-  return .{.length = 3};
+  return .{
+    .length = 5,
+    .timeout = 0x20
+  };
 }
-
-// fields: 
-// * timeout
 
 // encode from a struct
 pub fn encode(self: WritePageTimeout, allocator: std.mem.Allocator) ![]u8 {
@@ -43,33 +46,20 @@ pub fn encode(self: WritePageTimeout, allocator: std.mem.Allocator) ![]u8 {
   errdefer allocator.free(command);
   command[0] = OCF;
   command[1] = OGF << 2;
-  command[2] = 0;
+  command[2] = 2;
+  command[3] = @intCast(u8, self.timeout >> 8);
+  command[4] = @intCast(u8, self.timeout);
   // TODO: implement encoding WritePageTimeout
 
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) WritePageTimeout {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "WritePageTimeout decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = WritePageTimeout.decode(&payload);
-  _ = decoded;
-  try std.testing.expect(false);
-  @panic("test not implemented yet");
-}
-
 test "WritePageTimeout encode" {
-  const write_page_timeout = .{.length = 3};
+  const write_page_timeout = WritePageTimeout.init();
   const encoded = try WritePageTimeout.encode(write_page_timeout, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF >> 2);
+  try std.testing.expect(encoded[1] == OGF << 2);
   try std.testing.expect(false);
   @panic("test not implemented yet");
 }
