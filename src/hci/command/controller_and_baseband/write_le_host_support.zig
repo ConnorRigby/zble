@@ -34,7 +34,6 @@ le_supported_host_enabled: bool,
 length: usize,
 // fields: 
 
-le_supported_host_enabled: u8,
 pub fn init() WriteLEHostSupport {
   return .{
     .length = 5,
