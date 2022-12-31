@@ -31,7 +31,7 @@ pub const OPC: u16 = 0x520C;
 
 // fields: 
 fec_required: bool,
-extended_inquiry_response: [244]u8,
+extended_inquiry_response: [240]u8,
 
 // payload length
 length: usize,
@@ -39,7 +39,7 @@ pub fn init() WriteExtendedInquiryResponse {
   return .{
     .length = 248,
     .fec_required = false,
-    .extended_inquiry_response = std.mem.zeroes([244]u8)
+    .extended_inquiry_response = std.mem.zeroes([240]u8)
   };
 }
 
@@ -47,13 +47,10 @@ pub fn init() WriteExtendedInquiryResponse {
 pub fn encode(self: WriteExtendedInquiryResponse, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 241;
   command[3] = @boolToInt(self.fec_required);
   std.mem.copy(u8, command[4..], &self.extended_inquiry_response);
-
-
   return command;
 }
 
@@ -63,5 +60,5 @@ test "WriteExtendedInquiryResponse encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 241);
 }

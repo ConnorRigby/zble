@@ -32,9 +32,8 @@ pub fn build(b: *std.build.Builder) void {
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
 
-    const main_tests = b.addTest("src/main.zig");
+    const main_tests = b.addTest("src/zble.zig");
     const coverage = b.option(bool, "coverage", "Generate test coverage") orelse false;
-    main_tests.addPackagePath("serial", "lib/serial/src/serial.zig");
     main_tests.setBuildMode(mode);
     if (coverage) {
         // with kcov
@@ -52,7 +51,7 @@ pub fn build(b: *std.build.Builder) void {
     test_step.dependOn(&main_tests.step);
 
     //Build step to generate docs:
-    const docs = b.addTest("src/hci.zig");
+    const docs = b.addTest("src/zble.zig");
     if (coverage) {
         // with kcov
         docs.setExecCmd(&[_]?[]const u8{

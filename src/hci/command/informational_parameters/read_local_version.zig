@@ -19,26 +19,9 @@ pub fn init() ReadLocalVersion {
 pub fn encode(self: ReadLocalVersion, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 0;
-  // TODO: implement encoding ReadLocalVersion
-
   return command;
-}
-
-// decode from a binary
-pub fn decode(payload: []u8) ReadLocalVersion {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "ReadLocalVersion decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = ReadLocalVersion.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
 }
 
 test "ReadLocalVersion encode" {
@@ -47,5 +30,5 @@ test "ReadLocalVersion encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 0);
 }

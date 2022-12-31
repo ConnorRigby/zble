@@ -23,14 +23,19 @@ pub const OCF: u10 = 0x45;
 pub const OPC: u16 = 0x450C;
 
 // fields: 
-inquiry_mode: u8,
+inquiry_mode: enum(u8) {
+  Standard         = 0,
+  StandardWithRSSI = 1,
+  StandardWithRSSIOrExtendedInquiryResult = 2,
+  _
+},
 
 // payload length
 length: usize,
 pub fn init() WriteInquiryMode {
   return .{
     .length = 4,
-    .inquiry_mode = 0
+    .inquiry_mode = .Standard
   };
 }
 
@@ -38,12 +43,9 @@ pub fn init() WriteInquiryMode {
 pub fn encode(self: WriteInquiryMode, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 1;
-  command[3] = self.inquiry_mode;
-  // TODO: implement encoding WriteInquiryMode
-
+  command[3] = @enumToInt(self.inquiry_mode);
   return command;
 }
 
@@ -53,5 +55,6 @@ test "WriteInquiryMode encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 1);
+  try std.testing.expect(encoded[3] == 0);
 }

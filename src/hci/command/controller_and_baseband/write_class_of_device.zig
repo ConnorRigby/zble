@@ -38,14 +38,9 @@ pub fn init() WriteClassOfDevice {
 pub fn encode(self: WriteClassOfDevice, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
-  command[2] = 3;
-  command[3] = @intCast(u8, self.class >> 16);
-  command[4] = @intCast(u8, self.class >> 8);
-  command[5] = @intCast(u8, self.class);
-  // TODO: implement encoding WriteClassOfDevice
-
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
+  command[2] = @sizeOf(@TypeOf(self.class));
+  std.mem.writeInt(u24, command[3..6], self.class, .Little);
   return command;
 }
 
@@ -55,5 +50,6 @@ test "WriteClassOfDevice encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  const class = std.mem.readInt(u24, encoded[3..6], .Little);
+  try std.testing.expect(class == write_class_of_device.class);
 }

@@ -31,7 +31,6 @@ pub const CommandData = union(Command.OPC) {
   set_advertising_enable: Command.SetAdvertisingEnable,
   set_scan_parameters: Command.SetScanParameters,
   set_scan_enable: Command.SetScanEnable,
-  create_connection: Command.CreateConnection,
   create_connection_cancel: Command.CreateConnectionCancel,
   write_default_link_policy_settings: Command.WriteDefaultLinkPolicySettings,
   write_local_name: Command.WriteLocalName,
@@ -99,3 +98,5 @@ pub const Packet = union(PacketType) {
     };
   }
 };
+
+test {std.testing.refAllDecls(@This());}

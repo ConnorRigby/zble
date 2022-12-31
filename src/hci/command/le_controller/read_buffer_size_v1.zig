@@ -19,26 +19,9 @@ pub fn init() ReadBufferSizeV1 {
 pub fn encode(self: ReadBufferSizeV1, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 0;
-  // TODO: implement encoding ReadBufferSizeV1
-
   return command;
-}
-
-// decode from a binary
-pub fn decode(payload: []u8) ReadBufferSizeV1 {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "ReadBufferSizeV1 decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = ReadBufferSizeV1.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
 }
 
 test "ReadBufferSizeV1 encode" {
@@ -47,5 +30,5 @@ test "ReadBufferSizeV1 encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 0);
 }

@@ -10,39 +10,25 @@ pub const OCF: u10 = 0xC;
 pub const OPC: u16 = 0xC20;
 
 // fields: 
-// * filter_duplicates
+filter_duplicates: bool,
+le_scan_enable: bool,
 // * le_scan_enable
 
 // payload length
 length: usize,
 pub fn init() SetScanEnable {
-  return .{.length = 3};
+  return .{.length = 5, .filter_duplicates = false, .le_scan_enable = false};
 }
 
 // encode from a struct
 pub fn encode(self: SetScanEnable, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
-  command[2] = 0;
-  // TODO: implement encoding SetScanEnable
-
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
+  command[2] = 2;
+  command[3] = @boolToInt(self.filter_duplicates);
+  command[4] = @boolToInt(self.le_scan_enable);
   return command;
-}
-
-// decode from a binary
-pub fn decode(payload: []u8) SetScanEnable {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "SetScanEnable decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = SetScanEnable.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
 }
 
 test "SetScanEnable encode" {
@@ -51,5 +37,5 @@ test "SetScanEnable encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 2);
 }

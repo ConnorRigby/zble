@@ -109,7 +109,7 @@ pub const ReturnParameters = union(HCI.Command.OPC) {
   set_advertising_enable:                 ErrorCodeReturnParameters,
   set_scan_parameters:                    ErrorCodeReturnParameters,
   set_scan_enable:                        ErrorCodeReturnParameters,
-  create_connection:                      struct {}, // no return params
+  // create_connection:                      struct {}, // no return params
   create_connection_cancel:               ErrorCodeReturnParameters,
   write_default_link_policy_settings:     ErrorCodeReturnParameters,
   write_local_name:                       ErrorCodeReturnParameters,

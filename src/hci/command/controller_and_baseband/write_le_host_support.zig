@@ -29,14 +29,15 @@ pub const OPC: u16 = 0x6D0C;
 
 // fields: 
 le_supported_host_enabled: bool,
+unused: u8,
 
 // payload length
 length: usize,
-// fields: 
 
 pub fn init() WriteLEHostSupport {
   return .{
     .length = 5,
+    .unused = 0,
     .le_supported_host_enabled = false
   };
 }
@@ -45,13 +46,10 @@ pub fn init() WriteLEHostSupport {
 pub fn encode(self: WriteLEHostSupport, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 2;
   command[3] = @boolToInt(self.le_supported_host_enabled);
-  command[4] = 0x00;
-  // TODO: implement encoding WriteLEHostSupport
-
+  command[4] = self.unused;
   return command;
 }
 
@@ -61,5 +59,5 @@ test "WriteLEHostSupport encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 2);
 }

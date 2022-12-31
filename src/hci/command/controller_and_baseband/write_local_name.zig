@@ -38,13 +38,9 @@ pub fn init() WriteLocalName {
 pub fn encode(self: WriteLocalName, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 248;
   std.mem.copy(u8, command[3..], &self.name);
-
-  // TODO: implement encoding WriteLocalName
-
   return command;
 }
 
@@ -54,5 +50,6 @@ test "WriteLocalName encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 248);
+  // TODO assert local name
 }

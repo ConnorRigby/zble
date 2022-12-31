@@ -1,4 +1,5 @@
 const std = @import("std");
+const AssignedNumberes = @import("../../../../assigned_numbers.zig");
 
 pub const SetAdvertisingData = @This();
 
@@ -9,39 +10,25 @@ pub const OCF: u10 = 0x8;
 // Opcode
 pub const OPC: u16 = 0x820;
 
-// fields: 
-// * advertising_data
+advertising_data: [31]u8,
 
 // payload length
 length: usize,
 pub fn init() SetAdvertisingData {
-  return .{.length = 3};
+  return .{
+    .length = 3 + 31,
+    .advertising_data = std.mem.zeroes([31]u8)
+  };
 }
 
 // encode from a struct
 pub fn encode(self: SetAdvertisingData, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
-  command[2] = 0;
-  // TODO: implement encoding SetAdvertisingData
-
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
+  command[2] = 32; // length
+  std.mem.copy(u8, command[3..], &self.advertising_data);
   return command;
-}
-
-// decode from a binary
-pub fn decode(payload: []u8) SetAdvertisingData {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "SetAdvertisingData decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = SetAdvertisingData.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
 }
 
 test "SetAdvertisingData encode" {
@@ -50,5 +37,5 @@ test "SetAdvertisingData encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 32);
 }

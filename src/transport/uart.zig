@@ -150,7 +150,7 @@ fn receive_return_parameters(self: *Uart, command_opcode: Opcode, length: u8) !R
     .set_advertising_enable                 => self.receive_return_parameters_set_advertising_enable(),
     .set_scan_parameters                    => self.receive_return_parameters_set_scan_parameters(),
     .set_scan_enable                        => self.receive_return_parameters_set_scan_enable(),
-    .create_connection                      => self.receive_return_parameters_create_connection(),
+    // .create_connection                      => self.receive_return_parameters_create_connection(),
     .create_connection_cancel               => self.receive_return_parameters_create_connection_cancel(),
     .write_default_link_policy_settings     => self.receive_return_parameters_write_default_link_policy_settings(),
     .write_local_name                       => self.receive_return_parameters_write_local_name(),

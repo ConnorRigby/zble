@@ -22,8 +22,7 @@ pub fn init() SetAdvertisingEnable {
 pub fn encode(self: SetAdvertisingEnable, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 0;
   // TODO: implement encoding SetAdvertisingEnable
 

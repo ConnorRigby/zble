@@ -44,13 +44,9 @@ pub fn init() WritePageTimeout {
 pub fn encode(self: WritePageTimeout, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 2;
-  command[3] = @intCast(u8, self.timeout >> 8);
-  command[4] = @intCast(u8, self.timeout);
-  // TODO: implement encoding WritePageTimeout
-
+  std.mem.writeInt(u16, command[3..5], self.timeout, .Little);
   return command;
 }
 
@@ -60,5 +56,7 @@ test "WritePageTimeout encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 2);
+  const timeout = std.mem.readInt(u16, encoded[3..5], .Little);
+  try std.testing.expect(timeout == write_page_timeout.timeout);
 }

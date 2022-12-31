@@ -34,15 +34,25 @@ pub const OCF: u10 = 0x1A;
 // Opcode
 pub const OPC: u16 = 0x1A0C;
 
+pub const ScanEnable = enum(u8) {
+  None,
+  InquiryScanEnablePageScanDisable,
+  InquiryScaneDisablePageScanEnable,
+  InquiryScanEnablePageScanEnable,
+  _
+};
+
 // fields: 
-scan_enable: u8,
+//TODO: this looks like it could be a bit field union
+scan_enable: ScanEnable,
 
 // payload length
 length: usize,
+
 pub fn init() WriteScanEnable {
   return .{
     .length = 4,
-    .scan_enable = 0x00
+    .scan_enable = .None
   };
 }
 
@@ -50,12 +60,9 @@ pub fn init() WriteScanEnable {
 pub fn encode(self: WriteScanEnable, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 1;
-  command[3] = self.scan_enable;
-  // TODO: implement encoding WriteScanEnable
-
+  command[3] = @enumToInt(self.scan_enable);
   return command;
 }
 
@@ -65,5 +72,7 @@ test "WriteScanEnable encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 1);
+  const mode = @intToEnum(ScanEnable, encoded[3]);
+  try std.testing.expect(mode == .None);
 }

@@ -32,11 +32,8 @@ pub fn init() ReadLocalName {
 pub fn encode(self: ReadLocalName, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 0;
-  // TODO: implement encoding ReadLocalName
-
   return command;
 }
 
@@ -46,5 +43,4 @@ test "ReadLocalName encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
 }

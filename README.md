@@ -9,3 +9,5 @@
 ## Useful Links
 
 [Bluetooth Core Spec](https://www.bluetooth.org/DocMan/handlers/DownloadDoc.ashx?doc_id=521059)
+[Bluetooth Core Spec Supplement](https://www.bluetooth.org/docman/handlers/DownloadDoc.ashx?doc_id=519976)
+[Bluetooth Assigned Numbers](https://btprodspecificationrefs.blob.core.windows.net/assigned-numbers/Assigned%20Number%20Types/Assigned%20Numbers.pdfs)

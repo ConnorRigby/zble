@@ -19,26 +19,9 @@ pub fn init() CreateConnectionCancel {
 pub fn encode(self: CreateConnectionCancel, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 0;
-  // TODO: implement encoding CreateConnectionCancel
-
   return command;
-}
-
-// decode from a binary
-pub fn decode(payload: []u8) CreateConnectionCancel {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "CreateConnectionCancel decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = CreateConnectionCancel.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
 }
 
 test "CreateConnectionCancel encode" {
@@ -47,5 +30,5 @@ test "CreateConnectionCancel encode" {
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
   try std.testing.expect(encoded[1] == OGF << 2);
-  std.log.warn("unimplemented", .{});
+  try std.testing.expect(encoded[2] == 0);
 }

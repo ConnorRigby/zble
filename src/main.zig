@@ -27,7 +27,7 @@ pub fn main() !u8 {
     // var command = HCI.Command.ReadLocalName.init();
 
     var scan_enable = HCI.Command.WriteScanEnable.init();
-    scan_enable.scan_enable = 0x1;
+    scan_enable.scan_enable = .None;
     var packet: HCI.Packet = .{.command = .{.write_scan_enable = scan_enable}};
 
     const reader = serial.reader();

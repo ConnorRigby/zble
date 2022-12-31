@@ -100,13 +100,9 @@ pub fn init() SetEventMask {
 pub fn encode(self: SetEventMask, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-  command[0] = OCF;
-  command[1] = OGF << 2;
-  command[2] = 8;
-  std.mem.writeInt(u64, command[3..11], self.events.data, .Big);
-
-  // TODO: implement encoding SetEventMask
-
+  std.mem.writeInt(u16, command[0..2], OPC, .Big);
+  command[2] = @sizeOf(@TypeOf(self.events.data));
+  std.mem.writeInt(u64, command[3..11], self.events.data, .Little);
   return command;
 }
 
@@ -115,5 +111,8 @@ test "SetEventMask encode" {
   const encoded = try SetEventMask.encode(set_event_mask, std.testing.allocator);
   defer std.testing.allocator.free(encoded);
   try std.testing.expect(encoded[0] == OCF);
-  try std.testing.expect(encoded[1] == OGF << 2);
+  try std.testing.expect(encoded[1] == OGF << 2); // opcode
+  try std.testing.expect(encoded[2] == 8);        // length
+  const data: u64 = std.mem.readInt(u64, encoded[3..11], .Little);
+  try std.testing.expect(data == @as(u64, 0xffff_ffff_fff1_0000));
 }
