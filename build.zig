@@ -1,5 +1,4 @@
 const std = @import("std");
-// const serial = @import("lib/serial/build.zig");
 
 pub fn build(b: *std.build.Builder) void {
     // Standard target options allows the person running `zig build` to choose
@@ -16,7 +15,7 @@ pub fn build(b: *std.build.Builder) void {
     lib.setBuildMode(mode);
     lib.install();
 
-    const exe = b.addExecutable("tester", "src/main.zig");
+    const exe = b.addExecutable("zble-tester", "src/main.zig");
     exe.addPackagePath("serial", "lib/serial/src/serial.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
@@ -28,7 +27,7 @@ pub fn build(b: *std.build.Builder) void {
         run_cmd.addArgs(args);
     }
 
-    const run_step = b.step("run", "Run the app");
+    const run_step = b.step("run", "Run the test application");
     run_step.dependOn(&run_cmd.step);
 
     const main_tests = b.addTest("src/zble.zig");

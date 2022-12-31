@@ -84,11 +84,14 @@ pub const ErrorCode = enum(u8) {
 };
 
 pub const ErrorCodeReturnParameters = struct {
-  error_code: ErrorCode
+  error_code: ErrorCode,
+  pub fn format(params: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
+    try writer.print("{s}", .{@tagName(params.error_code)});
+  }
 };
 
 pub const ReturnParameters = union(HCI.Command.OPC) {
-  set_event_mask: struct {error_code: ErrorCode},
+  set_event_mask: ErrorCodeReturnParameters,
   read_local_version: struct {
     error_code:         ErrorCode,
     hci_version:        u8,
@@ -124,12 +127,15 @@ pub const ReturnParameters = union(HCI.Command.OPC) {
   write_default_erroneous_data_reporting: ErrorCodeReturnParameters,
   write_le_host_support:                  ErrorCodeReturnParameters,
   write_secure_connections_host_support:  ErrorCodeReturnParameters,
+  pub fn format(value: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
+    switch(value) {
+      inline else => |data| {
+        try writer.print("{s}{{{any}}}", .{@tagName(value), data});
+      }
+    }
+  }
 };
 
 num_hci_command_packets: u8,
 command_opcode: HCI.Command.OPC,
-return_parameters: ReturnParameters,
-
-test "CommandComplete decode " {
-  //TODO: implement test
-  std.log.warn("unimplemented", .{});}
+return_parameters: ReturnParameters
