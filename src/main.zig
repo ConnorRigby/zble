@@ -23,10 +23,8 @@ pub fn main() !u8 {
         .handshake = .hardware,
     });
     const allocator = std.heap.page_allocator;
-    // var command = HCI.Command.Reset.init();
-    // var command = HCI.Command.ReadLocalName.init();
 
-    var scan_enable = HCI.Command.WriteScanEnable.init();
+    var scan_enable = HCI.Command.ControllerAndBaseband.WriteScanEnable.init();
     scan_enable.scan_enable = .None;
     var packet: HCI.Packet = .{.command = .{.write_scan_enable = scan_enable}};
 
@@ -39,19 +37,19 @@ pub fn main() !u8 {
     packet = try transport.receive();
     std.log.info("received packet: {any}", .{packet});
 
-    var write_local_name = HCI.Command.WriteLocalName.init();
+    var write_local_name = HCI.Command.ControllerAndBaseband.WriteLocalName.init();
     packet = .{.command = .{.write_local_name = write_local_name}};
     try transport.write(packet);
     packet = try transport.receive();
     std.log.info("received packet: {any}", .{packet});
 
-    var read_local_version = HCI.Command.ReadLocalVersion.init();
+    var read_local_version = HCI.Command.InformationalParameters.ReadLocalVersion.init();
     packet = .{.command = .{.read_local_version = read_local_version}};
     try transport.write(packet);
     packet = try transport.receive();
     std.log.info("received packet: {any}", .{packet});
 
-    var set_event_mask = HCI.Command.SetEventMask.init();
+    var set_event_mask = HCI.Command.ControllerAndBaseband.SetEventMask.init();
     packet = .{.command = .{.set_event_mask = set_event_mask}};
     try transport.write(packet);
     packet = try transport.receive();

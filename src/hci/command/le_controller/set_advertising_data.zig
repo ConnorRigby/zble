@@ -1,5 +1,4 @@
 const std = @import("std");
-const AssignedNumberes = @import("../../../../assigned_numbers.zig");
 
 pub const SetAdvertisingData = @This();
 
@@ -14,6 +13,7 @@ advertising_data: [31]u8,
 
 // payload length
 length: usize,
+
 pub fn init() SetAdvertisingData {
   return .{
     .length = 3 + 31,

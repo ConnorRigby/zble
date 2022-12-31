@@ -1,3 +1,4 @@
+/// Section 1 of the Assigned Numbers specification
 pub const CommonDataType = enum(u8) {
   Flags                              = 0x01,
   IncompleteListOf16BitServiceUUIDs  = 0x02,

@@ -12,8 +12,7 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
-    const lib = b.addStaticLibrary("zble", "src/main.zig");
-    lib.addPackagePath("serial", "lib/serial/src/serial.zig");
+    const lib = b.addStaticLibrary("zble", "src/zble.zig");
     lib.setBuildMode(mode);
     lib.install();
 

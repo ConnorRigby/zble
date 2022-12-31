@@ -1,6 +1,7 @@
 pub const Server = @This();
 
-pub const HCI = @import("../hci.zig");
+const HCI = @import("../hci.zig");
+
 pub const SetAdvertisingParameters = HCI.Command.SetAdvertisingParameters;
 pub const SetAdvertisingData = HCI.Command.SetAdvertisingData;
 
