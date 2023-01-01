@@ -39,7 +39,7 @@ pub const OPC = enum(u16) {
   write_default_erroneous_data_reporting = ControllerAndBaseband.WriteDefaultErroneousDataReporting.OPC,
   write_le_host_support                  = ControllerAndBaseband.WriteLEHostSupport.OPC,
   write_secure_connections_host_support  = ControllerAndBaseband.WriteSecureConnectionsHostSupport.OPC,
-
+  _,
   pub fn format(value: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
     try writer.print("{s}(0x{X:1})", .{@tagName(value), @enumToInt(value)});
   }

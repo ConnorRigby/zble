@@ -16,7 +16,7 @@ length: usize,
 
 pub fn init() SetAdvertisingData {
   return .{
-    .length = 3 + 31,
+    .length = 3 + 1 + 31,
     .advertising_data = std.mem.zeroes([31]u8)
   };
 }
@@ -25,9 +25,13 @@ pub fn init() SetAdvertisingData {
 pub fn encode(self: SetAdvertisingData, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
+
   std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 32; // length
-  std.mem.copy(u8, command[3..], &self.advertising_data);
+  // std.log.debug("SetAdvertisingData.len={x}", .{std.mem.span(self.advertising_data).len});
+  var len = std.mem.span(&self.advertising_data).len;
+  command[3] = @truncate(u8, len);
+  std.mem.copy(u8, command[4..], &self.advertising_data);
   return command;
 }
 

@@ -10,12 +10,13 @@ pub const OCF: u10 = 0xA;
 pub const OPC: u16 = 0xA20;
 
 // fields: 
-// * advertising_enable
+advertising_enable: bool,
 
 // payload length
 length: usize,
 pub fn init() SetAdvertisingEnable {
-  return .{.length = 3};
+  // "<<0xA, 0x20, 0x1, 0x1>>"
+  return .{.length = 4, .advertising_enable = false};
 }
 
 // encode from a struct
@@ -23,24 +24,9 @@ pub fn encode(self: SetAdvertisingEnable, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
   std.mem.writeInt(u16, command[0..2], OPC, .Big);
-  command[2] = 0;
-  // TODO: implement encoding SetAdvertisingEnable
-
+  command[2] = 1;
+  command[3] = @boolToInt(self.advertising_enable);
   return command;
-}
-
-// decode from a binary
-pub fn decode(payload: []u8) SetAdvertisingEnable {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "SetAdvertisingEnable decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = SetAdvertisingEnable.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
 }
 
 test "SetAdvertisingEnable encode" {

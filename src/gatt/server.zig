@@ -15,11 +15,11 @@ state: State,
 transport: HCI.Transport.Uart,
 
 pub fn set_advertising_parameters(self: *Server, set_advertising_parameters: SetAdvertisingParameters) !void {
-  try self.transport.write_packet(.{.command = .{set_advertising_parameters = set_advertising_parameters}});
+  try self.transport.write(.{.command = .{set_advertising_parameters = set_advertising_parameters}});
 }
 
 pub fn set_advertising_data(self: *Server, sete_advertising_data: SetAdvertisingData) !void {
-  try self.transport.write_packet(.{.command = .{sete_advertising_data = sete_advertising_data}});
+  try self.transport.write(.{.command = .{sete_advertising_data = sete_advertising_data}});
 }
 
 // pub fn start_advertising(self: *Server) 

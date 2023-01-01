@@ -15,7 +15,8 @@ pub const Code = enum(u8) {
   disconnection_complete = DisconnectionComplete.Code,
   command_complete       = CommandComplete.Code,
   command_status         = CommandStatus.Code,
-  le_meta                = LEMeta.Code
+  le_meta                = LEMeta.Code,
+  _,
 };
 
 test {

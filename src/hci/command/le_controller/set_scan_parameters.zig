@@ -33,20 +33,6 @@ pub fn encode(self: SetScanParameters, allocator: std.mem.Allocator) ![]u8 {
   return command;
 }
 
-// decode from a binary
-pub fn decode(payload: []u8) SetScanParameters {
-  std.debug.assert(payload[0] == OCF);
-  std.debug.assert(payload[1] == OGF >> 2);
-  return .{.length = payload.len};
-}
-
-test "SetScanParameters decode" {
-  var payload = [_]u8 {OCF, OGF >> 2, 0};
-  const decoded = SetScanParameters.decode(&payload);
-  _ = decoded;
-  std.log.warn("unimplemented", .{});
-}
-
 test "SetScanParameters encode" {
   const set_scan_parameters = SetScanParameters.init();
   const encoded = try SetScanParameters.encode(set_scan_parameters, std.testing.allocator);

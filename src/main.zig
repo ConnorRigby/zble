@@ -1,68 +1,110 @@
+/// Example implementation for testing
+/// individual zBLE features
+
 const std = @import("std");
+
+// Helper for configuring serial ports
 const zig_serial = @import("serial");
 
-pub const HCI = @import("hci.zig");
+/// ZBLE main interface
+const zble = @import("zble");
 
-pub fn main() !u8 {
-    const port_name = "/dev/ttyUSB0";
+/// GAP interface for Generic Access
+const GAP = zble.GAP;
 
-    var serial = std.fs.cwd().openFile(port_name, .{ .mode = .read_write }) catch |err| switch (err) {
-        error.FileNotFound => {
-            try std.io.getStdOut().writer().print("The serial port {s} does not exist.\n", .{port_name});
-            return 1;
-        },
-        else => return err,
-    };
-    defer serial.close();
+/// ATT interface for Attribute protocol
+const ATT = zble.ATT;
 
-    try zig_serial.configureSerialPort(serial, zig_serial.SerialConfig{
+/// Assigned numbers for enums common types
+const AssignedNumbers = zble.AssignedNumbers;
+
+/// Advertising Data helper
+const AdvertisingData = zble.AdvertisingData;
+
+/// Use the `serial` package to open a port
+/// returns the File
+pub fn openPort(name: []const u8) !std.fs.File {
+    var serial = try std.fs.cwd().openFile(name, .{ .mode = .read_write });
+    errdefer serial.close();
+
+    try zig_serial.configureSerialPort(serial, .{
         .baud_rate = 115200,
         .word_size = 8,
         .parity = .none,
         .stop_bits = .one,
         .handshake = .hardware,
     });
+    return serial;
+}
+
+pub fn advertisingData(allocator: std.mem.Allocator) ![31]u8 {
+    const named_flags: AssignedNumbers.Flags = .{.named = .{
+        .le_limited_discoverable_mode = 0,
+        .le_general_discoverable_mode = 1,
+        .br_edr_not_supported         = 1,
+        .le_br_edr_supported          = 0,
+        ._unused                      = 0 
+    }};
+    const flags = AdvertisingData.Field(.Flags, &[1]u8{@intCast(u8, named_flags.data)});
+    const complete_local_name = AdvertisingData.Field(.CompleteLocalName, "zBLE");
+    const advertising_data_arr = [_]*const AdvertisingData{&flags, &complete_local_name};
+    const advertising_data = try AdvertisingData.encodeAll(&advertising_data_arr, allocator);
+    return advertising_data;
+}
+
+pub fn main() !u8 {
+    const port_name = "/dev/ttyUSB0";
+
+    var port = try openPort(port_name);
+    defer port.close();
+
+    // responsible for all memory operations
+    // within the zble context
     const allocator = std.heap.page_allocator;
 
-    var scan_enable = HCI.Command.ControllerAndBaseband.WriteScanEnable.init();
-    scan_enable.scan_enable = .None;
-    var packet: HCI.Packet = .{.command = .{.write_scan_enable = scan_enable}};
+    // context for interfacing BLE
+    var ctx = try zble.Context.init(
+        allocator, 
+        port.reader(),
+        port.writer(),
+    );
+    defer ctx.deinit();
 
-    const reader = serial.reader();
-    const writer = serial.writer();
-    var transport = HCI.Transport.Uart.init(allocator, reader, writer);
-    
-    try transport.write(packet);
+    // gap handler
+    var gap = try GAP.init(.Peripheral);
+    defer gap.deinit();
 
-    packet = try transport.receive();
-    std.log.info("received packet: {any}", .{packet});
+    // todo fix order
+    try gap.startAdveretising();
+    const advertising_data = try advertisingData(ctx.allocator);
+    try gap.setAdvertisingData(advertising_data);
 
-    var write_local_name = HCI.Command.ControllerAndBaseband.WriteLocalName.init();
-    packet = .{.command = .{.write_local_name = write_local_name}};
-    try transport.write(packet);
-    packet = try transport.receive();
-    std.log.info("received packet: {any}", .{packet});
+    // att handler
+    var att = try zble.ATT.init(ctx.allocator, 5);
+    defer att.deinit();
 
-    var read_local_version = HCI.Command.InformationalParameters.ReadLocalVersion.init();
-    packet = .{.command = .{.read_local_version = read_local_version}};
-    try transport.write(packet);
-    packet = try transport.receive();
-    std.log.info("received packet: {any}", .{packet});
+    // handles server operations for Attributes
+    var att_server = try ATT.Server.init(&att);
+    defer att_server.deinit();
 
-    var set_event_mask = HCI.Command.ControllerAndBaseband.SetEventMask.init();
-    packet = .{.command = .{.set_event_mask = set_event_mask}};
-    try transport.write(packet);
-    packet = try transport.receive();
-    std.log.info("received packet: {any}", .{packet});
+    // attach the HCI layer to relevant upper layers
+    try gap.attachContext(&ctx);
+    try att_server.attachContext(&ctx);
 
+    // main run loop
     while(true) {
-        var r = try reader.readByte();
-        std.log.info("unhandled byte. hex={x} dec={d}", .{r, r});
+        // receive a packet
+        try ctx.run();
+
+        // process handlers
+        ctx.runForHandlers();
+        
+        // process GAP
+        try gap.runForContext(&ctx);
+
+        // Process att messages
+        try att_server.runForContext(&ctx);
     }
 
     return 0;
-}
-
-test {
-  std.testing.refAllDecls(@This());
 }

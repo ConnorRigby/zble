@@ -84,12 +84,12 @@ pub const Packet = union(PacketType) {
   sync:    NotImplementedPacketType,
   event:   EventData,
   iso:     NotImplementedPacketType,
-  pub fn format(value: Packet, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
-    switch(value) {
-      .event => return writer.print("event: {any}", .{value.event}),
-      else => |d| return writer.print("{any}", .{d})
-    }
-  }
+  // pub fn format(value: Packet, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
+  //   switch(value) {
+  //     .event => return writer.print("event: {any}", .{value.event}),
+  //     else => |d| return writer.print("{any}", .{d})
+  //   }
+  // }
 
   /// Encode a packet into a slice of u8
   pub fn encode(packet: Packet, allocator: std.mem.Allocator) ![]u8 {

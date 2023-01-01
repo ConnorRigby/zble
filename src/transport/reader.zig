@@ -55,7 +55,11 @@ fn receive_event(reader: Reader) !Packet {
     .disconnection_complete => receive_disconnection_complete(reader),
     .command_complete       => receive_command_complete(reader),
     .command_status         => receive_command_status(reader),
-    .le_meta                => receive_le_meta(reader)
+    .le_meta                => receive_le_meta(reader),
+    else => |value| {
+      std.log.err("unknown event type: {any}", .{value});
+      unreachable;
+    }
   };
 }
 
@@ -103,7 +107,6 @@ fn receive_le_meta(reader: Reader) !Packet {
 }
 
 fn receive_return_parameters(reader: Reader, command_opcode: Opcode, length: u8) !ReturnParameters {
-  _ = length;
   return switch(command_opcode) {
     .set_event_mask                         => receive_return_parameters_set_event_mask(reader),
     .read_local_version                     => receive_return_parameters_read_local_version(reader),
@@ -130,6 +133,11 @@ fn receive_return_parameters(reader: Reader, command_opcode: Opcode, length: u8)
     .write_default_erroneous_data_reporting => receive_return_parameters_write_default_erroneous_data_reporting(reader),
     .write_le_host_support                  => receive_return_parameters_write_le_host_support(reader),
     .write_secure_connections_host_support  => receive_return_parameters_write_secure_connections_host_support(reader),
+    else => |value| {
+      std.log.err("unknown return params {x}", .{value});
+      try drain(reader, length);
+      unreachable;
+    }
   };
 }
 

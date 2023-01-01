@@ -17,6 +17,7 @@ pub fn build(b: *std.build.Builder) void {
 
     const exe = b.addExecutable("zble-tester", "src/main.zig");
     exe.addPackagePath("serial", "lib/serial/src/serial.zig");
+    exe.addPackagePath("zble", "src/zble.zig");
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();

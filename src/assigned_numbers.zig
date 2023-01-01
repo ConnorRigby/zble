@@ -1,3 +1,5 @@
+const std = @import("std");
+
 /// Section 1 of the Assigned Numbers specification
 pub const CommonDataType = enum(u8) {
   Flags                              = 0x01,
@@ -49,3 +51,25 @@ pub const CommonDataType = enum(u8) {
   @"3DInformationData"               = 0x3D,
   ManufacturerSpecificData           = 0xFF
 };
+
+pub const Flags = packed union {
+  named: packed struct {
+    le_limited_discoverable_mode: u1,
+    le_general_discoverable_mode: u1,
+    br_edr_not_supported:         u1,
+    le_br_edr_supported:          u1,
+    _unused:                      u4
+  },
+  data: u8
+};
+
+test {
+  const flags: Flags = .{.named = .{
+    .le_limited_discoverable_mode = 0,
+    .le_general_discoverable_mode = 1,
+    .br_edr_not_supported         = 1,
+    .le_br_edr_supported          = 0,
+    ._unused                      = 0 
+  }};
+  try std.testing.expect(@intCast(u8, flags.data) == @as(u8, 0b00000110));
+}
