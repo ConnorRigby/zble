@@ -7,7 +7,7 @@ pub const Transport = struct {
 };
 
 pub const Command = @import("hci/command.zig");
-pub const ACL     = struct {};
+pub const ACL     = @import("hci/acl.zig");
 pub const Sync    = struct {};
 pub const Event   = @import("hci/event.zig");
 pub const ISO     = struct {};
@@ -25,13 +25,13 @@ pub const CommandData = union(Command.OPC) {
   read_local_version:                     Command.InformationalParameters.ReadLocalVersion,
   read_buffer_size_v1:                    Command.LEController.ReadBufferSizeV1,
   reset:                                  Command.ControllerAndBaseband.Reset,
-  set_random_address:                     Command.LEController.SetRandomAddress,
-  set_advertising_parameters:             Command.LEController.SetAdvertisingParameters,
-  set_advertising_data:                   Command.LEController.SetAdvertisingData,
-  set_advertising_enable:                 Command.LEController.SetAdvertisingEnable,
-  set_scan_parameters:                    Command.LEController.SetScanParameters,
-  set_scan_enable:                        Command.LEController.SetScanEnable,
-  create_connection_cancel:               Command.LEController.CreateConnectionCancel,
+  le_set_random_address:                  Command.LEController.SetRandomAddress,
+  le_set_advertising_parameters:          Command.LEController.SetAdvertisingParameters,
+  le_set_advertising_data:                Command.LEController.SetAdvertisingData,
+  le_set_advertising_enable:              Command.LEController.SetAdvertisingEnable,
+  le_set_scan_parameters:                 Command.LEController.SetScanParameters,
+  le_set_scan_enable:                     Command.LEController.SetScanEnable,
+  le_create_connection_cancel:            Command.LEController.CreateConnectionCancel,
   write_default_link_policy_settings:     Command.LinkPolicy.WriteDefaultLinkPolicySettings,
   write_local_name:                       Command.ControllerAndBaseband.WriteLocalName,
   read_local_name:                        Command.ControllerAndBaseband.ReadLocalName,
@@ -60,12 +60,12 @@ pub const EventData = union(Event.Code) {
   command_status:         Event.CommandStatus,
   le_meta:                Event.LEMeta,
 
-  pub fn format(value: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
-    switch(value) {
-      .command_complete => return writer.print("command_complete: {any}", .{value.command_complete}),
-      else => |d| return writer.print("{any}", .{d})
-    }
-  }
+  // pub fn format(value: @This(), comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
+  //   switch(value) {
+  //     .command_complete => return writer.print("command_complete: {any}", .{value.command_complete}),
+  //     else => |d| return writer.print("{any}", .{d})
+  //   }
+  // }
   pub fn encode(_: @This(), _: std.mem.Allocator) ![]u8 {
     return error.NotImplemented;
   }
@@ -80,20 +80,24 @@ pub const NotImplementedPacketType = struct {
 
 pub const Packet = union(PacketType) {
   command: CommandData,
-  acl:     NotImplementedPacketType,
+  acl:     ACL.PDU,
   sync:    NotImplementedPacketType,
   event:   EventData,
   iso:     NotImplementedPacketType,
-  // pub fn format(value: Packet, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
-  //   switch(value) {
-  //     .event => return writer.print("event: {any}", .{value.event}),
-  //     else => |d| return writer.print("{any}", .{d})
-  //   }
-  // }
+  pub fn format(value: Packet, comptime _: []const u8, _: std.fmt.FormatOptions, writer: anytype) std.os.WriteError!void {
+    return switch(value) {
+      .command => |command| writer.print("command{{{any}}}", .{command}), 
+      .acl     => |acl    | writer.print("acl{{{any}}}",     .{acl    }),
+      .sync    => |sync   | writer.print("sync{{{any}}}",    .{sync   }),
+      .event   => |event  | writer.print("event{{{any}}}",   .{event  }),
+      .iso     => |iso    | writer.print("iso{{{any}}}",     .{iso    })
+    };
+  }
 
   /// Encode a packet into a slice of u8
   pub fn encode(packet: Packet, allocator: std.mem.Allocator) ![]u8 {
     return switch(packet) {
+      .acl, .sync, .event, .iso => @panic("unsupported encode operation on packet"),
       inline else => |data| data.encode(allocator)
     };
   }

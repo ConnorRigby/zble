@@ -1,8 +1,11 @@
 const std = @import("std");
+const log = std.log.scoped(.gap);
 const zble = @import("zble.zig");
 const Context = zble.Context;
 const HCI = zble.HCI;
 const Command = HCI.Command;
+const Event = HCI.Event;
+const CommandComplete = Event.CommandComplete; 
 const Packet = HCI.Packet;
 
 const Self = @This();
@@ -52,19 +55,28 @@ pub fn deinit(self: *Self) void {
 
 fn handler(ptr: ?*anyopaque, ctx: *Context, packet: *const Packet) void {
   var self = @ptrCast(*Self, @alignCast(@alignOf(*Self), ptr.?));
+  _ = ctx;
+
   switch(packet.*) {
     .event => |event| switch(event) {
       .command_complete => |command_complete| switch(command_complete.return_parameters) {
-        inline else => |return_parameters| {
-          std.log.info("command_complete: {any}", .{return_parameters});
+        .le_set_advertising_enable => |le_set_advertising_enable| self.handle_set_advertising_enable(le_set_advertising_enable),
+        .le_set_advertising_data => {},
+        inline else => |_| {
+          // log.debug("command_complete: {any}", .{return_parameters});
         }
       },
-      inline else => |event_type| std.log.err("unknown event type: {any}", .{event_type}),
+      inline else => |_| {},
     },
-    inline else => |packet_type| std.log.err("unknown packet type: {any}", .{packet_type}),
+    inline else => |_| {},
   }
-  _ = self;
-  _ = ctx;
+}
+
+pub fn handle_set_advertising_enable(self: *Self, params: CommandComplete.ErrorCodeReturnParameters) void {
+  if(params.error_code == .ok) {
+    log.info("advertising started", .{});
+    self.state = .advertising;
+  }
 }
 
 pub fn attachContext(self: *Self, ctx: *Context) !void {
@@ -73,24 +85,23 @@ pub fn attachContext(self: *Self, ctx: *Context) !void {
 
 pub fn runForContext(self: *Self, ctx: *Context) !void {
   switch(self.state) {
-    .idle => {
+    .idle, .advertising => {
       while(self.operations.popOrNull()) |op| {
         switch(op) {
           // TODO: make state data one packet wide
           .set_advertising_data => |value| {
             var set_advertising_data = Command.LEController.SetAdvertisingData.init();
             set_advertising_data.advertising_data = value;
-            try ctx.queue(.{.command = .{.set_advertising_data = set_advertising_data}});
+            try ctx.queue(.{.command = .{.le_set_advertising_data = set_advertising_data}});
           },
           .set_advertising_enable => {
             var set_advertising_enable = Command.LEController.SetAdvertisingEnable.init();
             set_advertising_enable.advertising_enable = true;
-            try ctx.queue(.{.command = .{.set_advertising_enable = set_advertising_enable}});
+            try ctx.queue(.{.command = .{.le_set_advertising_enable = set_advertising_enable}});
           }
         }
       }
-    },
-    else => @panic("unexpected state")
+    }
   }
 }
 

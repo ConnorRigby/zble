@@ -1,9 +1,9 @@
 const std = @import("std");
 
-pub const ControllerAndBaseband = @import("command/controller_and_baseband.zig");
+pub const ControllerAndBaseband   = @import("command/controller_and_baseband.zig");
 pub const InformationalParameters = @import("command/informational_parameters.zig");
-pub const LEController = @import("command/le_controller.zig");
-pub const LinkPolicy = @import("command/link_policy.zig");
+pub const LEController            = @import("command/le_controller.zig");
+pub const LinkPolicy              = @import("command/link_policy.zig");
 
 /// Opcode Group
 pub const OGF = enum(u10) {
@@ -19,13 +19,13 @@ pub const OPC = enum(u16) {
   read_local_version                     = InformationalParameters.ReadLocalVersion.OPC,
   read_buffer_size_v1                    = LEController.ReadBufferSizeV1.OPC,
   reset                                  = ControllerAndBaseband.Reset.OPC,
-  set_random_address                     = LEController.SetRandomAddress.OPC,
-  set_advertising_parameters             = LEController.SetAdvertisingParameters.OPC,
-  set_advertising_data                   = LEController.SetAdvertisingData.OPC,
-  set_advertising_enable                 = LEController.SetAdvertisingEnable.OPC,
-  set_scan_parameters                    = LEController.SetScanParameters.OPC,
-  set_scan_enable                        = LEController.SetScanEnable.OPC,
-  create_connection_cancel               = LEController.CreateConnectionCancel.OPC,
+  le_set_random_address                  = LEController.SetRandomAddress.OPC,
+  le_set_advertising_parameters          = LEController.SetAdvertisingParameters.OPC,
+  le_set_advertising_data                = LEController.SetAdvertisingData.OPC,
+  le_set_advertising_enable              = LEController.SetAdvertisingEnable.OPC,
+  le_set_scan_parameters                 = LEController.SetScanParameters.OPC,
+  le_set_scan_enable                     = LEController.SetScanEnable.OPC,
+  le_create_connection_cancel            = LEController.CreateConnectionCancel.OPC,
   write_default_link_policy_settings     = LinkPolicy.WriteDefaultLinkPolicySettings.OPC,
   write_local_name                       = ControllerAndBaseband.WriteLocalName.OPC,
   read_local_name                        = ControllerAndBaseband.ReadLocalName.OPC,

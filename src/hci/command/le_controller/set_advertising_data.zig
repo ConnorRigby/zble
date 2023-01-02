@@ -25,10 +25,8 @@ pub fn init() SetAdvertisingData {
 pub fn encode(self: SetAdvertisingData, allocator: std.mem.Allocator) ![]u8 {
   var command = try allocator.alloc(u8, self.length);
   errdefer allocator.free(command);
-
   std.mem.writeInt(u16, command[0..2], OPC, .Big);
   command[2] = 32; // length
-  // std.log.debug("SetAdvertisingData.len={x}", .{std.mem.span(self.advertising_data).len});
   var len = std.mem.span(&self.advertising_data).len;
   command[3] = @truncate(u8, len);
   std.mem.copy(u8, command[4..], &self.advertising_data);

@@ -1,14 +1,20 @@
 const std = @import("std");
+const log = std.log.scoped(.reader);
+
 const Reader = std.fs.File.Reader;
+const HCI   = @import("../hci.zig");
+const Event = HCI.Event;
+const ACL   = HCI.ACL;
 
+const ReturnParameters   = Event.CommandComplete.ReturnParameters;
+const ErrorCode          = Event.CommandComplete.ErrorCode;
 
-const HCI = @import("../hci.zig");
-const Event            = HCI.Event;
-const ReturnParameters = Event.CommandComplete.ReturnParameters;
-const ErrorCode        = Event.CommandComplete.ErrorCode;
-const PacketType       = HCI.PacketType;
-const Packet           = HCI.Packet;
-const Opcode           = HCI.Command.OPC;
+const LEMeta             = Event.LEMeta;
+const ConnectionComplete = LEMeta.ConnectionComplete;
+
+const PacketType         = HCI.PacketType;
+const Packet             = HCI.Packet;
+const Opcode             = HCI.Command.OPC;
 
 pub const Error = error {
   NotImplemented, // stub implementation
@@ -19,13 +25,14 @@ pub const Error = error {
 pub fn receive(reader: Reader) !Packet {
   while(true) {
     const packet_type = try reader.readEnum(PacketType, .Little);
-    switch(packet_type) {
-      .command => return receive_command(reader),
-      .acl     => return receive_acl(reader),
-      .sync    => return receive_sync(reader),
-      .event   => return receive_event(reader),
-      .iso     => return receive_iso(reader)
-    }
+    log.err("starting receive", .{});
+    return switch(packet_type) {
+      .command => receive_command(reader),
+      .acl     => receive_acl(reader),
+      .sync    => receive_sync(reader),
+      .event   => receive_event(reader),
+      .iso     => receive_iso(reader)
+    };
   }
   unreachable;
 }
@@ -37,9 +44,34 @@ fn receive_command(reader: Reader) !Packet {
 }
 
 fn receive_acl(reader: Reader) !Packet {
-  _ = reader;
-  // TODO: implement receiving ACL packets
-  return Error.NotImplemented;
+  std.log.err("receive acl", .{});
+  const header = try reader.readStruct(HCI.ACL.Header);
+  std.log.err("header={any}", .{header});
+
+  var payload = std.mem.zeroes([27]u8);
+  for(payload) |_,i| {
+    if(i == header.length) break;
+    if(i > header.length) @panic("unimplemented pdu length");
+    std.log.err("i={d}", .{i});
+    payload[i] = try reader.readByte();
+    std.log.err("[{d}]{d}", .{i, payload[i]});
+  }
+  var pdu = .{.header = header, .data = payload};
+  std.log.err("pdu={any}", .{pdu});
+  return .{.acl = pdu};
+
+  // const handle_and_flags = try reader.readInt(u16, .Little);
+  // const handle = @truncate(u12, handle_and_flags, .Little);
+
+  // const pb = (handle_and_flags >> 14) & 1;
+  // const bc = (handle_and_flags >> 15) & 1;
+  // const length = try reader.readInt(u16, .Little);
+  // var data = std.mem.zeroes([27]u8);
+  // for(data) |_,i| {
+  //   data[i] = try reader.readByte();
+  // }
+
+  // return .{.handle = handle, .flags = .{.pb = pb, .bc = bc}, .length = length, .data = data};
 }
 
 fn receive_sync(reader: Reader) !Packet {
@@ -101,9 +133,43 @@ fn receive_command_status(reader: Reader) !Packet {
 }
 
 fn receive_le_meta(reader: Reader) !Packet {
-    _ = reader;
-  // TODO: implement receiving receive_le_meta packets
-  return Error.NotImplemented;
+  const length = try reader.readByte();
+  const subevent = try reader.readEnum(LEMeta.SubeventCode, .Little);
+  return switch(subevent) {
+    .connection_complete => receive_le_meta_connection_complete(reader),
+    else => |value| {
+      std.log.err("unknown le_meat events {x}", .{value});
+      try drain(reader, length);
+      unreachable;
+    }
+  };
+}
+
+fn receive_le_meta_connection_complete(reader: Reader) !Packet {
+  const error_code = try reader.readEnum(ErrorCode, .Little);
+  const handle     = @truncate(u12, try reader.readInt(u16, .Little));
+  const role       = try reader.readEnum(ConnectionComplete.Role, .Little);
+  const peer_address_type = try reader.readEnum(ConnectionComplete.PeerAddressType, .Little);
+  var peer_address = std.mem.zeroes([6]u8);
+  var i: u8 = 0;
+  while(i < 6):(i = i + 1) {peer_address[i] = try reader.readByte();}
+  const connection_interval = try reader.readInt(u16, .Little);
+  const peripheral_latency = try reader.readInt(u16, .Little);
+  const supervision_timeout = try reader.readInt(u16, .Little);
+  const central_clock_accuracy = try reader.readEnum(ConnectionComplete.CentralClockAccuracy, .Little);
+  return .{.event = .{.le_meta = .{
+    .subevent = .{.connection_complete = .{
+      .status                 = error_code,
+      .handle                 = handle,
+      .role                   = role,
+      .peer_address_type      = peer_address_type,
+      .peer_address           = peer_address,
+      .connection_interval    = connection_interval,
+      .peripheral_latency     = peripheral_latency,
+      .supervision_timeout    = supervision_timeout,
+      .central_clock_accuracy = central_clock_accuracy,
+    }}
+  }}};
 }
 
 fn receive_return_parameters(reader: Reader, command_opcode: Opcode, length: u8) !ReturnParameters {
@@ -112,14 +178,14 @@ fn receive_return_parameters(reader: Reader, command_opcode: Opcode, length: u8)
     .read_local_version                     => receive_return_parameters_read_local_version(reader),
     .read_buffer_size_v1                    => receive_return_parameters_read_buffer_size_v1(reader),
     .reset                                  => receive_return_parameters_reset(reader),
-    .set_random_address                     => receive_return_parameters_set_random_address(reader),
-    .set_advertising_parameters             => receive_return_parameters_set_advertising_parameters(reader),
-    .set_advertising_data                   => receive_return_parameters_set_advertising_data(reader),
-    .set_advertising_enable                 => receive_return_parameters_set_advertising_enable(reader),
-    .set_scan_parameters                    => receive_return_parameters_set_scan_parameters(reader),
-    .set_scan_enable                        => receive_return_parameters_set_scan_enable(reader),
-    // .create_connection                      => receive_return_parameters_create_connection(reader),
-    .create_connection_cancel               => receive_return_parameters_create_connection_cancel(reader),
+    .le_set_random_address                  => receive_return_parameters_le_set_random_address(reader),
+    .le_set_advertising_parameters          => receive_return_parameters_le_set_advertising_parameters(reader),
+    .le_set_advertising_data                => receive_return_parameters_le_set_advertising_data(reader),
+    .le_set_advertising_enable              => receive_return_parameters_le_set_advertising_enable(reader),
+    .le_set_scan_parameters                 => receive_return_parameters_le_set_scan_parameters(reader),
+    .le_set_scan_enable                     => receive_return_parameters_le_set_scan_enable(reader),
+    // .le_create_connection                   => receive_return_parameters_create_connection(reader),
+    .le_create_connection_cancel            => receive_return_parameters_le_create_connection_cancel(reader),
     .write_default_link_policy_settings     => receive_return_parameters_write_default_link_policy_settings(reader),
     .write_local_name                       => receive_return_parameters_write_local_name(reader),
     .read_local_name                        => receive_return_parameters_read_local_name(reader),
@@ -179,44 +245,44 @@ fn receive_return_parameters_reset(reader: Reader) !ReturnParameters {
   return .{.reset  = .{.error_code = error_code}};
 }
 
-fn receive_return_parameters_set_random_address(reader: Reader) !ReturnParameters {
-  const error_code             = try reader.readEnum(ErrorCode, .Little);
-  return .{.set_random_address = .{.error_code = error_code}};
-}
-
-fn receive_return_parameters_set_advertising_parameters(reader: Reader) !ReturnParameters {
-  const error_code                     = try reader.readEnum(ErrorCode, .Little);
-  return .{.set_advertising_parameters = .{.error_code = error_code}};
-}
-
-fn receive_return_parameters_set_advertising_data(reader: Reader) !ReturnParameters {
-  const error_code               = try reader.readEnum(ErrorCode, .Little);
-  return .{.set_advertising_data = .{.error_code = error_code}};
-}
-
-fn receive_return_parameters_set_advertising_enable(reader: Reader) !ReturnParameters {
+fn receive_return_parameters_le_set_random_address(reader: Reader) !ReturnParameters {
   const error_code                 = try reader.readEnum(ErrorCode, .Little);
-  return .{.set_advertising_enable = .{.error_code = error_code}};
+  return .{.le_set_random_address  = .{.error_code = error_code}};
 }
 
-fn receive_return_parameters_set_scan_parameters(reader: Reader) !ReturnParameters {
+fn receive_return_parameters_le_set_advertising_parameters(reader: Reader) !ReturnParameters {
+  const error_code                        = try reader.readEnum(ErrorCode, .Little);
+  return .{.le_set_advertising_parameters = .{.error_code = error_code}};
+}
+
+fn receive_return_parameters_le_set_advertising_data(reader: Reader) !ReturnParameters {
+  const error_code                  = try reader.readEnum(ErrorCode, .Little);
+  return .{.le_set_advertising_data = .{.error_code = error_code}};
+}
+
+fn receive_return_parameters_le_set_advertising_enable(reader: Reader) !ReturnParameters {
+  const error_code                 = try reader.readEnum(ErrorCode, .Little);
+  return .{.le_set_advertising_enable = .{.error_code = error_code}};
+}
+
+fn receive_return_parameters_le_set_scan_parameters(reader: Reader) !ReturnParameters {
   const error_code              = try reader.readEnum(ErrorCode, .Little);
-  return .{.set_scan_parameters = .{.error_code = error_code}};
+  return .{.le_set_scan_parameters = .{.error_code = error_code}};
 }
 
-fn receive_return_parameters_set_scan_enable(reader: Reader) !ReturnParameters {
+fn receive_return_parameters_le_set_scan_enable(reader: Reader) !ReturnParameters {
   const error_code          = try reader.readEnum(ErrorCode, .Little);
-  return .{.set_scan_enable = .{.error_code = error_code}};
+  return .{.le_set_scan_enable = .{.error_code = error_code}};
 }
 
-// fn receive_return_parameters_create_connection(reader: Reader) !ReturnParameters {
+// fn receive_return_parameters_le_create_connection(reader: Reader) !ReturnParameters {
 //   _ = reader; // no params for this command
-//   return .{.create_connection = .{}};
+//   return .{.le_create_connection = .{}};
 // }
 
-fn receive_return_parameters_create_connection_cancel(reader: Reader) !ReturnParameters {
+fn receive_return_parameters_le_create_connection_cancel(reader: Reader) !ReturnParameters {
   const error_code                   = try reader.readEnum(ErrorCode, .Little);
-  return .{.create_connection_cancel = .{.error_code = error_code}};
+  return .{.le_create_connection_cancel = .{.error_code = error_code}};
 }
 
 fn receive_return_parameters_write_default_link_policy_settings(reader: Reader) !ReturnParameters {

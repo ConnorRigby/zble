@@ -2,6 +2,7 @@
 /// individual zBLE features
 
 const std = @import("std");
+const os = std.os;
 
 // Helper for configuring serial ports
 const zig_serial = @import("serial");
@@ -24,7 +25,7 @@ const AdvertisingData = zble.AdvertisingData;
 /// Use the `serial` package to open a port
 /// returns the File
 pub fn openPort(name: []const u8) !std.fs.File {
-    var serial = try std.fs.cwd().openFile(name, .{ .mode = .read_write });
+    var serial = try std.fs.cwd().openFile(name, .{ .mode = .read_write, .lock = .Exclusive });
     errdefer serial.close();
 
     try zig_serial.configureSerialPort(serial, .{
@@ -34,6 +35,24 @@ pub fn openPort(name: []const u8) !std.fs.File {
         .stop_bits = .one,
         .handshake = .hardware,
     });
+
+    var fl_flags = os.fcntl(serial.handle, os.F.GETFL, 0) catch |err| switch (err) {
+        error.FileBusy => unreachable,
+        error.Locked => unreachable,
+        error.PermissionDenied => unreachable,
+        error.DeadLock => unreachable,
+        error.LockedRegionLimitExceeded => unreachable,
+        else => |e| return e,
+    };
+    fl_flags |= @as(usize, os.O.NONBLOCK);
+    _ = os.fcntl(serial.handle, os.F.SETFL, fl_flags) catch |err| switch (err) {
+        error.FileBusy => unreachable,
+        error.Locked => unreachable,
+        error.PermissionDenied => unreachable,
+        error.DeadLock => unreachable,
+        error.LockedRegionLimitExceeded => unreachable,
+        else => |e| return e,
+    };
     return serial;
 }
 
@@ -52,7 +71,7 @@ pub fn advertisingData(allocator: std.mem.Allocator) ![31]u8 {
     return advertising_data;
 }
 
-pub fn main() !u8 {
+pub fn main() !void {
     const port_name = "/dev/ttyUSB0";
 
     var port = try openPort(port_name);
@@ -69,6 +88,9 @@ pub fn main() !u8 {
         port.writer(),
     );
     defer ctx.deinit();
+    
+    // reset the baseband layer
+    try ctx.reset();
 
     // gap handler
     var gap = try GAP.init(.Peripheral);
@@ -94,7 +116,10 @@ pub fn main() !u8 {
     // main run loop
     while(true) {
         // receive a packet
-        try ctx.run();
+        ctx.run() catch |err| switch(err) {
+            error.WouldBlock => continue,
+            else => |e| return e
+        };
 
         // process handlers
         ctx.runForHandlers();
@@ -105,6 +130,4 @@ pub fn main() !u8 {
         // Process att messages
         try att_server.runForContext(&ctx);
     }
-
-    return 0;
 }

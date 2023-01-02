@@ -40,9 +40,9 @@ pub fn write(self: *Self, allocator: std.mem.Allocator, packet: Packet) !void {
   buffer[0] = 0x01;
   std.mem.copy(u8, buffer[1..], encoded);
   var full_command_to_send = buffer[0..encoded.len + 1];
-  std.debug.print("command\n", .{});
-  for(full_command_to_send)|c,i|{std.debug.print("\nout[{d}]={x:0>2}", .{i, c});}
-  std.debug.print("/command\n", .{});
+  // std.debug.print("command\n", .{});
+  // for(full_command_to_send)|c,i|{std.debug.print("\nout[{d}]={x:0>2}", .{i, c});}
+  // std.debug.print("/command\n", .{});
   try self.writer.writeAll(full_command_to_send);
 }
 

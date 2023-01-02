@@ -15,7 +15,6 @@ advertising_enable: bool,
 // payload length
 length: usize,
 pub fn init() SetAdvertisingEnable {
-  // "<<0xA, 0x20, 0x1, 0x1>>"
   return .{.length = 4, .advertising_enable = false};
 }
 

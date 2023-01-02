@@ -87,6 +87,10 @@ pub const Context = struct {
     ctx.handlers.deinit(ctx.allocator);
   }
 
+  pub fn reset(ctx: *Context) !void {
+    try ctx.queue(.{.command = .{.reset = HCI.Command.ControllerAndBaseband.Reset.init()}});
+  }
+
   /// register a handler to be called when packets arrive
   pub fn attach(ctx: *Context, handler: Handler) !void {
     try ctx.handlers.append(ctx.allocator, handler);
@@ -96,20 +100,17 @@ pub const Context = struct {
   /// buffer it internally
   pub fn run(ctx: *Context) !void {
     for(ctx.out.items) |packet| {
-      std.log.debug("write {any}", .{packet});
       try ctx.transport.write(ctx.allocator, packet);
     }
     
     // drain the out buffer
     while(ctx.out.popOrNull()) |_|{
-      // receive packet
-      // TODO: non blocking? early exit?
-      std.log.debug("receive", .{});
       const packet = try ctx.transport.receive();
-      std.log.debug("read: {any}", .{packet});
       try ctx.in.append(ctx.allocator, packet);
     }
 
+    const packet = try ctx.transport.receive();
+    try ctx.in.append(ctx.allocator, packet);
   }
 
   /// iterates over the buffer of packets and
@@ -125,7 +126,7 @@ pub const Context = struct {
 
   /// enqueue a packet for being sent out
   pub fn queue(ctx: *Context, packet: Packet) !void {
-    std.log.debug("queue: {any}", .{packet});
+    // std.log.debug("queue: {any}", .{packet});
     try ctx.out.append(ctx.allocator, packet);
   }
 };
