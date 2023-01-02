@@ -88,6 +88,12 @@ pub fn main() !void {
         port.writer(),
     );
     defer ctx.deinit();
+
+    var transport = ctx.transport;
+    errdefer {
+        std.log.err("HCI error. Draining: ", .{});
+        transport.drain(255) catch {};
+    }
     
     // reset the baseband layer
     try ctx.reset();
@@ -102,11 +108,11 @@ pub fn main() !void {
     try gap.setAdvertisingData(advertising_data);
 
     // att handler
-    var att = try zble.ATT.init(ctx.allocator, 5);
-    defer att.deinit();
+    var db = try ATT.DB.init(ctx.allocator, 5);
+    defer db.deinit();
 
     // handles server operations for Attributes
-    var att_server = try ATT.Server.init(&att);
+    var att_server = try ATT.Server.init(&db);
     defer att_server.deinit();
 
     // attach the HCI layer to relevant upper layers

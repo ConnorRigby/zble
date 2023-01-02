@@ -5,6 +5,8 @@ const Reader = std.fs.File.Reader;
 const HCI   = @import("../hci.zig");
 const Event = HCI.Event;
 const ACL   = HCI.ACL;
+const L2CAP = @import("../l2cap.zig");
+const ATT   = @import("../att.zig");
 
 const ReturnParameters   = Event.CommandComplete.ReturnParameters;
 const ErrorCode          = Event.CommandComplete.ErrorCode;
@@ -23,18 +25,21 @@ pub const Error = error {
 
 /// receives a single HCI packet
 pub fn receive(reader: Reader) !Packet {
-  while(true) {
-    const packet_type = try reader.readEnum(PacketType, .Little);
-    log.err("starting receive", .{});
-    return switch(packet_type) {
-      .command => receive_command(reader),
-      .acl     => receive_acl(reader),
-      .sync    => receive_sync(reader),
-      .event   => receive_event(reader),
-      .iso     => receive_iso(reader)
-    };
-  }
-  unreachable;
+  var packet_type: ?PacketType = null;
+  const payload = try reader.readInt(u8, .Little);
+  errdefer if(packet_type) |p| {
+    std.log.err("Error receiving packet: {any}", .{p});
+  } else std.log.err("Invalid HCI packet type: 0x{x}", .{payload});
+
+  packet_type = @intToEnum(PacketType, payload);
+  // log.debug("starting receive", .{});
+  return switch(packet_type.?) {
+    .command => receive_command(reader),
+    .acl     => receive_acl(reader),
+    .sync    => receive_sync(reader),
+    .event   => receive_event(reader),
+    .iso     => receive_iso(reader)
+  };
 }
 
 fn receive_command(reader: Reader) !Packet {
@@ -44,34 +49,55 @@ fn receive_command(reader: Reader) !Packet {
 }
 
 fn receive_acl(reader: Reader) !Packet {
-  std.log.err("receive acl", .{});
+  std.log.debug("receive acl", .{});
   const header = try reader.readStruct(HCI.ACL.Header);
-  std.log.err("header={any}", .{header});
+  if(header.length > 27) @panic("FIXME: implement ACL spanning multiple frames");
+  std.log.debug("header={any}", .{header});
 
   var payload = std.mem.zeroes([27]u8);
   for(payload) |_,i| {
     if(i == header.length) break;
-    if(i > header.length) @panic("unimplemented pdu length");
-    std.log.err("i={d}", .{i});
     payload[i] = try reader.readByte();
-    std.log.err("[{d}]{d}", .{i, payload[i]});
   }
-  var pdu = .{.header = header, .data = payload};
-  std.log.err("pdu={any}", .{pdu});
+
+  var l2cap_header  = @bitCast(L2CAP.Header, payload[0..4].*);
+  if(header.length > 23) @panic("FIXME: implement l2cap spanning multiple frames");
+  var l2cap_payload = std.mem.zeroes([23]u8);
+  for(l2cap_payload) |_,i| {
+    if(i == header.length) break;
+    l2cap_payload[i] = payload[@sizeOf(L2CAP.Header)+i];
+  }
+  var l2cap_data: L2CAP.Data = undefined;
+  if(l2cap_header.cid == 0x04) { // TODO: fix magic number. This is the LE ATT channel
+    const opc = @intToEnum(ATT.Opcode, std.mem.readInt(u8, l2cap_payload[0..1], .Little));
+    switch(opc) {
+      // TODO: move the contents of this switch to a new function
+      .exchange_mtu_request => {
+        const client_rx_mtu = std.mem.readInt(u16, l2cap_payload[1..3], .Little);
+        const exchange_mtu_request = .{.client_rx_mtu = client_rx_mtu};
+        l2cap_data = .{.att = .{.cmd = .{.exchange_mtu_request = exchange_mtu_request}}};
+      },
+      else => |unhandled_opcode| {
+        std.log.err("Unhandled ATT opcode: {any}", .{unhandled_opcode});
+        @panic("Unknown ATT opcode");
+      }
+    }
+  } else {
+    l2cap_data = .{.unk = l2cap_payload};
+  }
+
+  const l2cap: L2CAP = .{
+    .header = l2cap_header,
+    .data   = l2cap_data
+  };
+
+  var pdu: ACL.PDU = .{
+    .header = header, 
+    .data = .{.l2cap = l2cap}
+  };
+  
+  std.log.debug("pdu={any}", .{pdu});
   return .{.acl = pdu};
-
-  // const handle_and_flags = try reader.readInt(u16, .Little);
-  // const handle = @truncate(u12, handle_and_flags, .Little);
-
-  // const pb = (handle_and_flags >> 14) & 1;
-  // const bc = (handle_and_flags >> 15) & 1;
-  // const length = try reader.readInt(u16, .Little);
-  // var data = std.mem.zeroes([27]u8);
-  // for(data) |_,i| {
-  //   data[i] = try reader.readByte();
-  // }
-
-  // return .{.handle = handle, .flags = .{.pb = pb, .bc = bc}, .length = length, .data = data};
 }
 
 fn receive_sync(reader: Reader) !Packet {
@@ -81,16 +107,29 @@ fn receive_sync(reader: Reader) !Packet {
 }
 
 fn receive_event(reader: Reader) !Packet {
-  const event_type = try reader.readEnum(Event.Code, .Little);
-  return switch(event_type) {
+  var event_type: ?Event.Code = null;
+  const payload = try reader.readInt(u8, .Little);
+  errdefer if(event_type) |p| {
+    std.log.err("Error receiving event: {any}", .{p});
+  } else std.log.err("Invalid HCI event type: 0x{x}", .{payload});
+
+  event_type = @intToEnum(Event.Code, payload);
+
+  return switch(event_type.?) {
     .inquiry_complete       => receive_inquire_complete(reader),
     .disconnection_complete => receive_disconnection_complete(reader),
     .command_complete       => receive_command_complete(reader),
     .command_status         => receive_command_status(reader),
     .le_meta                => receive_le_meta(reader),
-    else => |value| {
-      std.log.err("unknown event type: {any}", .{value});
-      unreachable;
+    else => |event| {
+      std.log.err("unknown event type: {any}", .{event});
+      const length = try reader.readInt(u16, .Little);
+      var i:u16 = 0;
+      while(i < length) : (i = i + 1) {
+        const c = try reader.readByte();
+        std.log.err("event[{d}] = {x}", .{i, c});
+      }
+      return error.NotImplemented;
     }
   };
 }
@@ -351,7 +390,7 @@ fn receive_return_parameters_write_secure_connections_host_support(reader: Reade
 }
 
 // helper to receive the  rest of a packet in an unhandled state
-fn drain(reader: Reader, amount: u8) !void {
+pub fn drain(reader: Reader, amount: u8) !void {
   var i:u8 = 0;
   while(i < amount):(i = i + 1) {
     const b = try reader.readByte();

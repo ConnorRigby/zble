@@ -12,6 +12,8 @@ pub const Sync    = struct {};
 pub const Event   = @import("hci/event.zig");
 pub const ISO     = struct {};
 
+pub const L2CAP   = @import("l2cap.zig");
+
 pub const PacketType = enum(u8) {
   command = 0x01,
   acl     = 0x02,
@@ -97,7 +99,7 @@ pub const Packet = union(PacketType) {
   /// Encode a packet into a slice of u8
   pub fn encode(packet: Packet, allocator: std.mem.Allocator) ![]u8 {
     return switch(packet) {
-      .acl, .sync, .event, .iso => @panic("unsupported encode operation on packet"),
+      .sync, .event, .iso => @panic("unsupported encode operation on packet"),
       inline else => |data| data.encode(allocator)
     };
   }
