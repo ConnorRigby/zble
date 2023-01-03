@@ -88,7 +88,11 @@ pub const PDU = struct {
           .att => |att| {
             std.mem.writeInt(u8, payload[8..9], @enumToInt(@as(ATT.Command, att.cmd)), .Little);
             switch(att.cmd) {
-              // .error_response => |error_response|
+              .error_response => |error_response| {
+                std.mem.writeInt(u8, payload[9..10], @enumToInt(error_response.request_opcode), .Little);
+                std.mem.writeInt(u16, payload[10..12], error_response.request_handle, .Little);
+                std.mem.writeInt(u8, payload[12..13], @enumToInt(error_response.error_code), .Little);
+              },
               // .exchange_mtu_request => |exchange_mtu_request|
               .exchange_mtu_response => |exchange_mtu_response| std.mem.writeInt(u16, payload[9..11], exchange_mtu_response.server_rx_mtu, .Little),
               // .execute_write_request => |execute_write_request|

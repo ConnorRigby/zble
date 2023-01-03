@@ -22,6 +22,8 @@ const AssignedNumbers = zble.AssignedNumbers;
 /// Advertising Data helper
 const AdvertisingData = zble.AdvertisingData;
 
+const PacketLogger = @import("packet_logger.zig");
+
 /// Use the `serial` package to open a port
 /// returns the File
 pub fn openPort(name: []const u8) !std.fs.File {
@@ -98,6 +100,10 @@ pub fn main() !void {
     // reset the baseband layer
     try ctx.reset();
 
+    var packet_logger: PacketLogger = .{};
+    defer {}
+
+
     // gap handler
     var gap = try GAP.init(.Peripheral);
     defer gap.deinit();
@@ -116,6 +122,7 @@ pub fn main() !void {
     defer att_server.deinit();
 
     // attach the HCI layer to relevant upper layers
+    try packet_logger.attachContext(&ctx);
     try gap.attachContext(&ctx);
     try att_server.attachContext(&ctx);
 

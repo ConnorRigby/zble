@@ -1,4 +1,6 @@
 const std = @import("std");
+// FIXME should be on a root level module, not command_complete
+const CommandComplete = @import("command_complete.zig");
 
 /// The HCI_Disconnection_Complete event occurs when a connection is terminated.
 /// 
@@ -19,6 +21,6 @@ pub const DisconnectionComplete = @This();
 
 pub const Code = 0x5;
 
-test "DisconnectionComplete decode " {
-  //TODO: implement test
-  std.log.warn("unimplemented", .{});}
+handle: u12,
+status: CommandComplete.ErrorCode,
+reason: CommandComplete.ErrorCode,

@@ -80,7 +80,7 @@ pub fn handle_set_advertising_enable(self: *Self, params: CommandComplete.ErrorC
 }
 
 pub fn attachContext(self: *Self, ctx: *Context) !void {
-  try ctx.attach(.{.ptr = self, .callback = handler});
+  try ctx.attach(.{.ptr = self, .callback = handler, .outHandler = null});
 }
 
 pub fn runForContext(self: *Self, ctx: *Context) !void {

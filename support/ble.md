@@ -296,8 +296,7 @@ BlueHeron.Peripheral.set_advertising_parameters(peripheral, %{})
 # Complete Local Name
 # Incomplete List of 128-bit Servive UUIDs
 advertising_data =
-  <<0x02, 0x01, 0b00000110>> <>
-    <<0x09, 0x09, "MyApp-XY">> <>
+  <<0x02, 0x01, 0b00000110>> <> <<0x09, 0x09, "MyApp-XY">> <>
     <<0x11, 0x06, <<0x42A31ABD030C4D5CA8DF09686DD16CC0::little-128>>::binary>>
 
 BlueHeron.Peripheral.set_advertising_data(peripheral, advertising_data)

@@ -29,8 +29,11 @@ pub const ATT = @import("att.zig");
 /// callback structure. Use to register
 /// HCI packet
 pub const Handler = struct {
+  pub const Callback = *const fn (?*anyopaque, *Context, *const Packet) void;
+  pub const OutHandler = *const fn (?*anyopaque, *Context, *[]u8) void;
   ptr: ?*anyopaque,
-  callback: *const fn (?*anyopaque, *Context, *const Packet) void
+  callback: Callback,
+  outHandler: ?OutHandler
 };
 
 /// Root Level handle to BLE operations
@@ -100,7 +103,11 @@ pub const Context = struct {
   /// buffer it internally
   pub fn run(ctx: *Context) !void {
     for(ctx.out.items) |packet| {
-      try ctx.transport.write(ctx.allocator, packet);
+      var payload = try ctx.transport.write(ctx.allocator, packet);
+      defer ctx.allocator.free(payload);
+      for(ctx.handlers.items) |handle| {
+        if(handle.outHandler) |outHandler| outHandler(handle.ptr, ctx, &payload);
+      }
     }
     
     // drain the out buffer
