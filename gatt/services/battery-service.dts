@@ -1,0 +1,28 @@
+/dts-v1/;
+// /include/ "filename"
+
+/ {
+  profile0 {
+    services {
+      #address-cells = <0x01>;
+      #size-cells = <0>;
+
+      service@180F {
+        primary;
+        reg = <0x180F>;
+
+        characteristics {
+          #address-cells = <0x01>;
+          #size-cells = <0>;
+
+          characteristic@2A19 {
+            reg = <0x2A19>;
+            format = "u8";
+            unit   = "percentage";
+          };
+        };
+
+      };
+    };
+  };
+};

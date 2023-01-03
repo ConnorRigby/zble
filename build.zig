@@ -11,6 +11,43 @@ pub fn build(b: *std.build.Builder) void {
     // between Debug, ReleaseSafe, ReleaseFast, and ReleaseSmall.
     const mode = b.standardReleaseOptions();
 
+    const bison = b.addSystemCommand(&[_][]const u8 {"bison", "-b", "lib/dtc/", "-d", "lib/dtc/dtc-parser.y", "-o", "lib/dtc/dtc-parser.tab.c"});
+    const flex = b.addSystemCommand(&[_][]const u8 {"flex", "-o", "lib/dtc/dtc-lexer.lex.c", "lib/dtc/dtc-lexer.l"});
+
+    const libdtc_cflags = [_][]const u8 {
+        "-std=c99",
+        "-Wall", 
+        "-Wpointer-arith", 
+        "-Wcast-qual", 
+        "-Wnested-externs", 
+        "-Wsign-compare", 
+        "-Wstrict-prototypes", 
+        "-Wmissing-prototypes", 
+        "-Wredundant-decls", 
+        "-Wshadow"
+    };
+    const libdtc = b.addExecutable("dtc", null);
+    libdtc.linkLibC();
+    libdtc.linkSystemLibrary("yaml-0.1");
+    libdtc.addIncludePath("lib/dtc/");
+    libdtc.addIncludePath("support/dtc/");
+    libdtc.addCSourceFile("lib/dtc/checks.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/data.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/flattree.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/fstree.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/livetree.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/srcpos.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/treesource.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/util.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/dtc.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/dtc-lexer.lex.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/dtc-parser.tab.c", &libdtc_cflags);
+    libdtc.addCSourceFile("lib/dtc/yamltree.c", &libdtc_cflags);
+    libdtc.setBuildMode(.ReleaseFast);
+    libdtc.install();
+    libdtc.step.dependOn(&bison.step);
+    libdtc.step.dependOn(&flex.step);
+
     const lib = b.addStaticLibrary("zble", "src/zble.zig");
     lib.setBuildMode(mode);
     lib.install();
@@ -21,6 +58,9 @@ pub fn build(b: *std.build.Builder) void {
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
+    
+    const battery_service = b.addObjectSource("battery-service", null);
+    battery_service.install();
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());
@@ -28,8 +68,14 @@ pub fn build(b: *std.build.Builder) void {
         run_cmd.addArgs(args);
     }
 
-    const run_step = b.step("run", "Run the test application");
+    const run_step = b.step("run", "Run the application");
     run_step.dependOn(&run_cmd.step);
+
+    const dtc_cmd = libdtc.run();
+    dtc_cmd.step.dependOn(b.getInstallStep());
+
+    const dtc_step = b.step("dtc", "Run dtc");
+    dtc_step.dependOn(&dtc_cmd.step);
 
     const main_tests = b.addTest("src/zble.zig");
     const coverage = b.option(bool, "coverage", "Generate test coverage") orelse false;

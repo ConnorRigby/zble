@@ -7,3 +7,6 @@
 [submodule "support/btstack"]
 	path = support/btstack
 	url = https://github.com/bluekitchen/btstack.git
+[submodule "lib/dtc"]
+	path = lib/dtc
+	url = https://github.com/dgibson/dtc.git
