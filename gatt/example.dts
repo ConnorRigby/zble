@@ -1,0 +1,55 @@
+/dts-v1/;
+#include "gatt.h"
+#include "bluetooth.h"
+#include "bluetooth_gatt.h"
+#include "bluetooth_sdp.h"
+
+/ {
+  #address-cells = <0x01>;
+  #size-cells    = <0>;
+  attributes {
+    #address-cells = <0x01>;
+    #size-cells    = <0>;
+    attribute@0001 {
+      reg   = <0x0001>; 
+      type  = <PRIMARY_SERVICE_UUID>;
+      value = <GAP_SERVICE_UUID>;
+    };
+    attribute@0004 {
+      reg   = <0x0004>;
+      type  = <CHARACTERISTIC_UUID>;
+      value = <0x0002 &char_0006 GAP_DEVICE_NAME_UUID>;
+    };
+    char_0006: attribute@0006 {
+      phandle = <0x0006>;
+      reg   = <0x0006>;
+      type  = <GAP_DEVICE_NAME_UUID>;
+      value = "hello";
+    };
+    attribute@0010 {
+      reg   = <0x0010>; 
+      type  = <PRIMARY_SERVICE_UUID>;
+      value = <GATT_SERVICE_UUID>;
+    };
+    attribute@0011 {
+      reg   = <0x0011>;
+      type  = <CHARACTERISTIC_UUID>;
+      value = <0x26 0x12 GAP_SERVICE_CHANGED>;
+    };
+    attribute@0012 {
+      reg   = <0x0012>;
+      type  = <CHARACTERISTIC_UUID>;
+      value = <0x0000 0x0000>;
+    };
+    attribute@1000 {
+      reg   = <0x1000>;
+      type  = <PRIMARY_SERVICE_UUID>;
+      value = <ORG_BLUETOOTH_SERVICE_BATTERY_SERVICE>;
+    };
+    attribute@0106 {
+      reg   = <0x0106>;
+      type  = <CHARACTERISTIC_UUID>;
+      value = <0x02 0x0110 ORG_BLUETOOTH_CHARACTERISTIC_BATTERY_POWER_STATE>;
+    };
+  };
+};

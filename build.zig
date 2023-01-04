@@ -30,6 +30,7 @@ pub fn build(b: *std.build.Builder) void {
     libdtc.linkLibC();
     libdtc.linkSystemLibrary("yaml-0.1");
     libdtc.addIncludePath("lib/dtc/");
+    libdtc.addIncludePath("lib/dtc/libfdt");
     libdtc.addIncludePath("support/dtc/");
     libdtc.addCSourceFile("lib/dtc/checks.c", &libdtc_cflags);
     libdtc.addCSourceFile("lib/dtc/data.c", &libdtc_cflags);
@@ -58,9 +59,6 @@ pub fn build(b: *std.build.Builder) void {
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
-    
-    const battery_service = b.addObjectSource("battery-service", null);
-    battery_service.install();
 
     const run_cmd = exe.run();
     run_cmd.step.dependOn(b.getInstallStep());

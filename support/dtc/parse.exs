@@ -68,7 +68,7 @@ end
 
 # <<_::bytes-size(off_dt_struct), dt_struct::bytes-size(size_dt_struct), _::binary>> = data
 
-fdt = File.read!("battery-service.dtb")
+fdt = File.read!("example.dtb")
 <<0xD00DFEED::32-big,
   totalsize::32-big,
   off_dt_struct::32-big,

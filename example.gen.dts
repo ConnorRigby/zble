@@ -1,0 +1,24 @@
+/dts-v1/;
+
+/ {
+  #address-cells = <0x01>;
+  #size-cells = <0>;
+  attributes {
+    attribute@0001 {
+      reg = <0x2800 0x1800>;
+    };
+    attribute@0004 {
+      reg = <0x2803
+             0x0002
+             0x0006
+             0x2a00
+            >;
+    };
+    attribute@0006 {
+      reg = <0x2a00>, "Hyper Space Spoon";
+    };
+    attribute@0010 {
+      reg = <0x2800 0x1801>;
+    }
+  };
+};
